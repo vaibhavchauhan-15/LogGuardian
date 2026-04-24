@@ -1,0 +1,6 @@
+Set-Location "c:\Users\vaibh\PROGRAMMING\PROJECTS\LogGuardian\backend";
+c:/Users/vaibh/PROGRAMMING/PROJECTS/LogGuardian/.venv/Scripts/python.exe -m compileall app
+
+c:/Users/vaibh/PROGRAMMING/PROJECTS/LogGuardian/.venv/Scripts/python.exe -m app.main
+
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
