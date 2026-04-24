@@ -5,8 +5,8 @@
   --color-foreground: var(--foreground);
 
   /* Font Families */
-  --font-sans: "Circular", "Inter", var(--font-inter), "Helvetica Neue", "Helvetica", "Arial", sans-serif;
-  --font-mono: "Source Code Pro", var(--font-source-code-pro), "Office Code Pro", "Menlo", monospace;
+  --font-sans: var(--font-space-grotesk), "Space Grotesk", "Inter", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), "IBM Plex Mono", "Source Code Pro", "Menlo", monospace;
 
   /* Brand Colors */
   --color-brand: var(--brand);
@@ -150,5 +150,14 @@
     font-size: 16px;
     line-height: 1.50;
     font-weight: 400;
+  }
+
+  @keyframes marquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
   }
 }

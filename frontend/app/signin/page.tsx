@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 
 import { SignInExperience } from "@/components/auth/signin-experience";
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function SignInPage() {
-  return <SignInExperience />;
+  // useSearchParams() inside SignInExperience requires a Suspense boundary.
+  return (
+    <Suspense>
+      <SignInExperience />
+    </Suspense>
+  );
 }

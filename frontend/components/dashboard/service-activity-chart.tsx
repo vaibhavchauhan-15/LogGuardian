@@ -17,28 +17,37 @@ function ServiceActivityChartBase({ services }: ServiceActivityChartProps) {
   }));
 
   return (
-    <div className="h-64 w-full">
+    <div className="h-[280px] w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid stroke="rgba(140, 167, 205, 0.15)" strokeDasharray="3 3" />
+        <BarChart data={data} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#242424" vertical={false} />
           <XAxis
             dataKey="name"
-            tick={{ fill: "var(--muted-foreground)", fontSize: 10 }}
-            axisLine={false}
+            tick={{ fill: "#555", fontSize: 11, fontFamily: "IBM Plex Mono" }}
+            axisLine={{ stroke: "#2e2e2e" }}
             tickLine={false}
             interval={0}
           />
-          <YAxis tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} width={32} />
+          <YAxis
+            tick={{ fill: "#555", fontSize: 11, fontFamily: "IBM Plex Mono" }}
+            axisLine={false}
+            tickLine={false}
+            width={32}
+          />
           <Tooltip
             contentStyle={{
-              borderRadius: 14,
-              border: "1px solid var(--border)",
-              background: "color-mix(in oklab, var(--bg-card border border-border shadow-none rounded-[12px] p-6-strong), transparent 7%)",
-              color: "var(--lg-text)",
+              background: "#141414",
+              border: "1px solid #2e2e2e",
+              borderRadius: "8px",
+              fontFamily: "IBM Plex Mono",
+              fontSize: "12px",
+              color: "#b4b4b4",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
             }}
+            cursor={{ fill: "rgba(255,255,255,0.03)" }}
           />
-          <Bar dataKey="total" radius={[6, 6, 0, 0]} fill="var(--lg-accent)" />
-          <Bar dataKey="critical" radius={[6, 6, 0, 0]} fill="var(--lg-accent-strong)" />
+          <Bar dataKey="total" radius={[4, 4, 0, 0]} fill="#3ecf8e" fillOpacity={0.8} />
+          <Bar dataKey="critical" radius={[4, 4, 0, 0]} fill="#ff4d4f" fillOpacity={0.8} />
         </BarChart>
       </ResponsiveContainer>
     </div>

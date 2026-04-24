@@ -3,20 +3,42 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Activity, ArrowRight, PlusCircle, RefreshCcw } from "lucide-react";
+import { ArrowRight, LayoutDashboard, PlusCircle, RefreshCcw } from "lucide-react";
 
 import { type DashboardSummary, listDashboards } from "@/lib/api";
 import { resolveAndStoreUserContext } from "@/lib/user-context";
-import { Button } from "@/components/ui/button";
 
-function statusChip(status: DashboardSummary["status"]) {
+function dashboardStatusChip(status: DashboardSummary["status"]) {
   if (status === "critical") {
-    return "bg-red-500/15 text-red-600 dark:text-red-300";
+    return {
+      label: "critical",
+      className:
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-['IBM_Plex_Mono'] font-medium bg-red-950/50 text-red-400 border border-red-900/50",
+      dotClassName: "w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse",
+    };
   }
+
   if (status === "warning") {
-    return "bg-amber-500/15 text-amber-600 dark:text-amber-300";
+    return {
+      label: "warning",
+      className:
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-['IBM_Plex_Mono'] font-medium bg-amber-950/50 text-amber-400 border border-amber-900/50",
+      dotClassName: "w-1.5 h-1.5 rounded-full bg-amber-400",
+    };
   }
-  return "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300";
+
+  return {
+    label: "normal",
+    className:
+      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-['IBM_Plex_Mono'] font-medium bg-[#3ecf8e]/10 text-[#3ecf8e] border border-[#3ecf8e]/20",
+    dotClassName: "w-1.5 h-1.5 rounded-full bg-[#3ecf8e]",
+  };
+}
+
+function anomalyRateColor(value: number) {
+  if (value < 5) return "text-[#3ecf8e]";
+  if (value < 20) return "text-[#f5a623]";
+  return "text-red-400";
 }
 
 export function DashboardProjectsApp() {
@@ -25,17 +47,15 @@ export function DashboardProjectsApp() {
   const [feedback, setFeedback] = useState("");
 
   const criticalCount = useMemo(
-    () => dashboards.filter((dashboard) => dashboard.status === "critical").length,
+    () => dashboards.filter((d) => d.status === "critical").length,
     [dashboards]
   );
 
   async function loadDashboards() {
     setLoading(true);
     setFeedback("");
-
     try {
       await resolveAndStoreUserContext();
-
       const response = await listDashboards();
       setDashboards(response.items);
     } catch (error) {
@@ -56,121 +76,179 @@ export function DashboardProjectsApp() {
   }, []);
 
   return (
-    <div className="lg-shell">
-      <main className="lg-section pt-10">
-        <section className="bg-card border border-border shadow-none rounded-[12px] p-6 relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_20%,rgba(63,213,185,0.14),transparent_40%),radial-gradient(circle_at_86%_18%,rgba(114,188,255,0.16),transparent_42%)]" />
-          <div className="relative flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="lg-kicker">Project Dashboards</p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Isolated Monitoring Workspaces</h1>
-              <p className="lg-subtle mt-3 max-w-2xl text-sm">
-                Each dashboard is a strict analytics boundary. Logs and metrics never mix across projects.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button type="button" variant="secondary" size="sm" onClick={() => void loadDashboards()}>
-                <RefreshCcw className="h-4 w-4" aria-hidden="true" />
-                Refresh
-              </Button>
-              <Link href="/create-dashboard">
-                <Button type="button" variant="default" size="sm">
-                  <PlusCircle className="h-4 w-4" aria-hidden="true" />
-                  Create Dashboard
-                </Button>
-              </Link>
-            </div>
+    <div className="min-h-screen bg-[#0a0a0a] text-[#fafafa]">
+      {/* ── Top Nav ── */}
+      <header className="sticky top-0 z-50 h-12 border-b border-[#242424] bg-[#111111]">
+        <div className="flex h-full items-center justify-between px-5 sm:px-8 lg:px-10">
+          {/* Logo mark */}
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-[#3ecf8e]" aria-hidden="true" />
+            <span className="font-['IBM_Plex_Mono'] text-xs font-medium tracking-wide text-[#fafafa]">
+              LogGuardian
+            </span>
           </div>
 
-          <div className="relative mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <article className="rounded-2xl border border-(--border) bg-(--bg-card border border-border shadow-none rounded-[12px] p-6-strong) p-4">
-              <p className="text-xs uppercase tracking-[0.14em] lg-subtle">Total Dashboards</p>
-              <p className="mt-2 text-2xl font-semibold">{dashboards.length}</p>
-            </article>
-            <article className="rounded-2xl border border-(--border) bg-(--bg-card border border-border shadow-none rounded-[12px] p-6-strong) p-4">
-              <p className="text-xs uppercase tracking-[0.14em] lg-subtle">Critical Projects</p>
-              <p className="mt-2 text-2xl font-semibold">{criticalCount}</p>
-            </article>
-            <article className="rounded-2xl border border-(--border) bg-(--bg-card border border-border shadow-none rounded-[12px] p-6-strong) p-4">
-              <p className="text-xs uppercase tracking-[0.14em] lg-subtle">Isolation Model</p>
-              <p className="mt-2 text-sm font-medium">user_id + dashboard_id</p>
-            </article>
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <button
+              id="refresh-dashboards-btn"
+              type="button"
+              onClick={() => void loadDashboards()}
+              className="flex items-center gap-1.5 rounded-md border border-[#2e2e2e] bg-transparent px-3 py-1.5 font-['IBM_Plex_Mono'] text-xs font-medium text-[#898989] transition-all duration-150 hover:border-[#3d3d3d] hover:bg-[#1e1e1e] hover:text-[#fafafa]"
+            >
+              <RefreshCcw className="h-3.5 w-3.5" aria-hidden="true" />
+              Refresh
+            </button>
+            <Link
+              id="create-dashboard-btn"
+              href="/create-dashboard"
+              className="flex items-center gap-1.5 rounded-md bg-[#3ecf8e] px-3 py-1.5 text-xs font-semibold text-[#0a0a0a] transition-all duration-150 hover:bg-[#5af0a8]"
+            >
+              <PlusCircle className="h-3.5 w-3.5" aria-hidden="true" />
+              Create Dashboard
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        {/* ── Hero Band ── */}
+        <section className="w-full border-b border-[#242424] bg-[linear-gradient(180deg,#141414_0%,#0a0a0a_100%)] px-5 py-8 sm:px-8 lg:px-10">
+          <p className="font-['IBM_Plex_Mono'] text-[11px] uppercase tracking-[1.5px] text-[#898989]">
+            Project Dashboards
+          </p>
+          <h1 className="mt-3 font-['Space_Grotesk'] text-[32px] font-normal leading-tight tracking-[-0.5px] text-[#fafafa]">
+            Isolated Monitoring Workspaces
+          </h1>
+          <p className="mt-1.5 max-w-[560px] font-['IBM_Plex_Mono'] text-sm text-[#898989]">
+            Each dashboard is a strict analytics boundary. Logs and metrics never mix across projects.
+          </p>
+
+          {/* Stat grid */}
+          <div className="mt-8 grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-[#2e2e2e] bg-[#2e2e2e] sm:grid-cols-3">
+            <div className="bg-[#111111] px-6 py-5">
+              <p className="mb-2 font-['IBM_Plex_Mono'] text-[10px] uppercase tracking-[1.5px] text-[#555]">
+                Total Dashboards
+              </p>
+              <p className="font-['Space_Grotesk'] text-3xl font-light text-[#fafafa]">
+                {loading ? <span className="skeleton inline-block h-8 w-8 rounded" /> : dashboards.length}
+              </p>
+            </div>
+
+            <div className="bg-[#111111] px-6 py-5">
+              <p className="mb-2 font-['IBM_Plex_Mono'] text-[10px] uppercase tracking-[1.5px] text-[#555]">
+                Critical Projects
+              </p>
+              <p className="flex items-center gap-2 font-['Space_Grotesk'] text-3xl font-light text-[#fafafa]">
+                {!loading && criticalCount > 0 && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#3ecf8e]" aria-hidden="true" />
+                )}
+                {loading ? <span className="skeleton inline-block h-8 w-8 rounded" /> : criticalCount}
+              </p>
+            </div>
+
+            <div className="bg-[#111111] px-6 py-5">
+              <p className="mb-2 font-['IBM_Plex_Mono'] text-[10px] uppercase tracking-[1.5px] text-[#555]">
+                Isolation Model
+              </p>
+              <p className="font-['IBM_Plex_Mono'] text-sm text-[#b4b4b4]">user_id + dashboard_id</p>
+            </div>
           </div>
         </section>
 
-        {feedback ? <p className="mt-4 bg-card border border-border shadow-none rounded-[12px] p-6 px-4 py-3 text-sm">{feedback}</p> : null}
+        {/* ── Feedback ── */}
+        {feedback ? (
+          <div className="px-5 pt-6 sm:px-8 lg:px-10">
+            <p className="rounded-xl border border-red-900/40 bg-red-950/20 px-4 py-3 font-['IBM_Plex_Mono'] text-xs text-red-300">
+              {feedback}
+            </p>
+          </div>
+        ) : null}
 
-        <section className="mt-6">
+        {/* ── Cards Grid ── */}
+        <section className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2 lg:grid-cols-3 lg:p-8">
           {loading ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, idx) => (
-                <div key={idx} className="bg-card border border-border shadow-none rounded-[12px] p-6 h-52 animate-pulse bg-(--lg-accent-soft)" />
-              ))}
-            </div>
+            Array.from({ length: 6 }).map((_, idx) => (
+              <div key={idx} className="skeleton h-64 rounded-xl" />
+            ))
           ) : dashboards.length === 0 ? (
-            <div className="bg-card border border-border shadow-none rounded-[12px] p-6 text-center">
-              <Activity className="mx-auto h-10 w-10 lg-subtle" aria-hidden="true" />
-              <p className="mt-3 text-lg font-semibold">No dashboards yet</p>
-              <p className="lg-subtle mt-2 text-sm">Create your first project to start isolated log analytics.</p>
-              <div className="mt-5">
-                <Link href="/create-dashboard">
-                  <Button type="button" size="sm">
-                    <PlusCircle className="h-4 w-4" aria-hidden="true" />
-                    Create Dashboard
-                  </Button>
-                </Link>
+            <div className="col-span-full flex flex-col items-center justify-center gap-4 py-24">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#2e2e2e] bg-[#111111]">
+                <LayoutDashboard className="h-5 w-5 text-[#555]" aria-hidden="true" />
               </div>
+              <p className="font-['IBM_Plex_Mono'] text-sm text-[#898989]">No dashboards yet</p>
+              <Link
+                href="/create-dashboard"
+                className="flex items-center gap-1.5 rounded-md bg-[#3ecf8e] px-3 py-1.5 text-xs font-semibold text-[#0a0a0a] transition-all duration-150 hover:bg-[#5af0a8]"
+              >
+                <PlusCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                Create your first dashboard
+              </Link>
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {dashboards.map((dashboard, index) => (
+            dashboards.map((dashboard, index) => {
+              const status = dashboardStatusChip(dashboard.status);
+              return (
                 <motion.article
                   key={dashboard.id}
-                  initial={{ opacity: 0, y: 14 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="bg-card border border-border shadow-none rounded-[12px] p-6 flex h-full flex-col"
+                  transition={{ duration: 0.25, delay: index * 0.04 }}
+                  className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-xl border border-[#2e2e2e] bg-[#111111] transition-all duration-200 hover:border-[#3d3d3d] hover:bg-[#141414]"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-lg font-semibold">{dashboard.name}</p>
-                      <p className="lg-subtle mt-1 text-xs uppercase tracking-[0.14em]">{dashboard.type}</p>
+                  {/* Card Header */}
+                  <div className="px-4 pb-3 pt-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className={status.className}>
+                        <span className={status.dotClassName} aria-hidden="true" />
+                        {status.label}
+                      </span>
                     </div>
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusChip(dashboard.status)}`}>
-                      {dashboard.status}
-                    </span>
+                    <h2 className="mt-3 line-clamp-1 font-['Space_Grotesk'] text-[18px] font-medium text-[#fafafa]">
+                      {dashboard.name}
+                    </h2>
+                    <p className="mt-1 line-clamp-2 font-['IBM_Plex_Mono'] text-[13px] text-[#898989]">
+                      {dashboard.type} · {dashboard.description || "No description provided"}
+                    </p>
                   </div>
 
-                  <p className="lg-subtle mt-3 line-clamp-2 text-sm">
-                    {dashboard.description || "No description provided for this dashboard."}
-                  </p>
-
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded-xl border border-(--border) p-2">
-                      <p className="lg-subtle">Logs</p>
-                      <p className="mt-1 font-semibold">{dashboard.total_logs_processed}</p>
+                  {/* Stat cells */}
+                  <div className="grid grid-cols-2 gap-px border-t border-[#2e2e2e] bg-[#2e2e2e]">
+                    <div className="bg-[#111111] px-4 py-3">
+                      <p className="mb-1 font-['IBM_Plex_Mono'] text-[10px] uppercase tracking-widest text-[#555]">
+                        Logs
+                      </p>
+                      <p className="font-['Space_Grotesk'] text-xl text-[#fafafa]">
+                        {dashboard.total_logs_processed}
+                      </p>
                     </div>
-                    <div className="rounded-xl border border-(--border) p-2">
-                      <p className="lg-subtle">Anomaly Rate</p>
-                      <p className="mt-1 font-semibold">{dashboard.anomaly_rate.toFixed(2)}%</p>
+                    <div className="bg-[#111111] px-4 py-3">
+                      <p className="mb-1 font-['IBM_Plex_Mono'] text-[10px] uppercase tracking-widest text-[#555]">
+                        Anomaly Rate
+                      </p>
+                      <p className={`font-['Space_Grotesk'] text-xl ${anomalyRateColor(dashboard.anomaly_rate)}`}>
+                        {dashboard.anomaly_rate.toFixed(2)}%
+                      </p>
                     </div>
                   </div>
 
-                  <p className="lg-subtle mt-3 text-xs">
+                  {/* Last updated */}
+                  <p className="border-t border-[#242424] px-4 py-2.5 font-['IBM_Plex_Mono'] text-[11px] text-[#555]">
                     Last updated: {new Date(dashboard.last_updated).toLocaleString()}
                   </p>
 
-                  <div className="mt-auto pt-4">
-                    <Link href={`/dashboard/${dashboard.id}`}>
-                      <Button type="button" variant="secondary" size="sm" className="w-full justify-between">
+                  {/* Open Dashboard footer */}
+                  <div className="mt-auto border-t border-[#242424] px-4 py-3 transition-colors duration-200 group-hover:bg-[#3ecf8e]/5">
+                    <Link href={`/dashboard/${dashboard.id}`} className="flex items-center justify-between">
+                      <span className="font-['IBM_Plex_Mono'] text-xs text-[#898989] transition-colors group-hover:text-[#3ecf8e]">
                         Open Dashboard
-                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                      </Button>
+                      </span>
+                      <ArrowRight className="h-3.5 w-3.5 text-[#555] transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-[#3ecf8e]" />
                     </Link>
                   </div>
                 </motion.article>
-              ))}
-            </div>
+              );
+            })
           )}
         </section>
       </main>
