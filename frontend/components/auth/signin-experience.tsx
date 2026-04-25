@@ -40,13 +40,25 @@ const DEMO_POOL: Omit<DemoLog, "id" | "ts">[] = [
   { service: "notification-svc",level: "WARN",     message: "SendGrid bounce rate 3.1% — above baseline",              classification: "suspicious", score: 0.62 },
 ];
 
-const INTERVALS = [950, 1450, 750, 1850, 1150, 1650, 850, 2050, 1250];
 const MAX_ROWS  = 8;
 const ROW_H     = 54; // px — fixed row height
+const LOOP_INTERVAL_MS = 900;
+const DEMO_BASE_TS = Date.UTC(2026, 0, 1, 4, 3, 31);
 
-function pick<T>(arr: T[]) { return arr[Math.floor(Math.random() * arr.length)]; }
-function mkLog(seed: Omit<DemoLog, "id" | "ts">): DemoLog {
-  return { ...seed, id: Math.random().toString(36).slice(2), ts: new Date().toISOString() };
+function mkLog(
+  seed: Omit<DemoLog, "id" | "ts">,
+  id: string,
+  tsMs: number
+): DemoLog {
+  return { ...seed, id, ts: new Date(tsMs).toISOString() };
+}
+
+function initialLogs(): DemoLog[] {
+  return Array.from({ length: MAX_ROWS }, (_, i) => {
+    const seed = DEMO_POOL[i % DEMO_POOL.length];
+    const tsMs = DEMO_BASE_TS - i * 2000;
+    return mkLog(seed, `seed-${i}`, tsMs);
+  });
 }
 
 // ─── Always-dark colour helpers ───────────────────────────────────────────────
@@ -73,27 +85,28 @@ const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const DUR = 0.38;
 
 function DemoLogTerminal() {
-  const prefersReducedMotion = useReducedMotion();
-  const [logs, setLogs] = useState<DemoLog[]>(() =>
-    Array.from({ length: MAX_ROWS }, (_, i) => mkLog(DEMO_POOL[i % DEMO_POOL.length]))
-  );
+  const [logs, setLogs] = useState<DemoLog[]>(() => initialLogs());
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const idxRef   = useRef(MAX_ROWS);
+  const idxRef = useRef(MAX_ROWS);
+  const tickRef = useRef(0);
 
   useEffect(() => {
-    if (prefersReducedMotion) return;
     function next() {
       timerRef.current = setTimeout(() => {
-        const seed = DEMO_POOL[idxRef.current++ % DEMO_POOL.length];
-        setLogs(p => [mkLog(seed), ...p].slice(0, MAX_ROWS));
+        const nextIdx = idxRef.current++;
+        const seed = DEMO_POOL[nextIdx % DEMO_POOL.length];
+        const tsMs = DEMO_BASE_TS + tickRef.current * 2000;
+        const nextLog = mkLog(seed, `live-${nextIdx}`, tsMs);
+        tickRef.current += 1;
+        setLogs(prev => [nextLog, ...prev].slice(0, MAX_ROWS));
         next();
-      }, pick(INTERVALS));
+      }, LOOP_INTERVAL_MS);
     }
     next();
     return () => {
       if (timerRef.current !== undefined) clearTimeout(timerRef.current);
     };
-  }, [prefersReducedMotion]);
+  }, []);
 
   return (
     /* Force dark background with hardcoded colours — theme-independent */
@@ -141,7 +154,7 @@ function DemoLogTerminal() {
                   <div className="flex items-center justify-between gap-2 min-w-0">
                     <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
                       <span className="shrink-0 font-mono text-[10px] tabular-nums" style={{ color: "#6b7280" }}>
-                        {new Date(log.ts).toLocaleTimeString("en-US", { hour12: false })}
+                        {log.ts.slice(11, 19)}
                       </span>
                       <span className="shrink-0 font-mono text-[10px] font-semibold" style={{ color: lvlColor(log.level) }}>
                         {log.level}
@@ -196,15 +209,10 @@ export function SignInExperience() {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const searchParams = useSearchParams();
+  const oauthErrorMessage = searchParams.get("error_description") ?? searchParams.get("error");
 
   const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "") ?? "";
   const authEnabled  = Boolean(supabaseUrl);
-
-  useEffect(() => {
-    const e = searchParams.get("error");
-    const d = searchParams.get("error_description");
-    if (e) setErrorMessage(d ?? e);
-  }, [searchParams]);
 
   const handleGoogleSignIn = async () => {
     if (!authEnabled || isSigningIn) return;
@@ -291,13 +299,13 @@ export function SignInExperience() {
 
             {/* Error */}
             <AnimatePresence>
-              {errorMessage && (
+              {(errorMessage ?? oauthErrorMessage) && (
                 <motion.div key="err"
                   initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                   className="mt-4 flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm text-red-600 dark:text-red-400"
                   role="alert">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>{errorMessage}</span>
+                  <span>{errorMessage ?? oauthErrorMessage}</span>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -346,15 +354,11 @@ export function SignInExperience() {
                 </button>
               </motion.div>
 
-              {!authEnabled ? (
-                <p className="mt-3 text-center text-xs text-amber-500">
-                  Set <code className="font-mono">NEXT_PUBLIC_SUPABASE_URL</code> and <code className="font-mono">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>.
-                </p>
-              ) : (
+              {authEnabled ? (
                 <p className="mt-3 text-center font-mono text-[10px] text-muted-foreground">
                   Secured by Supabase Auth · No password required
                 </p>
-              )}
+              ) : null}
             </div>
           </div>
 
