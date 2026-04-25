@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 
+import { SmoothScroll } from "@/components/providers/smooth-scroll";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
@@ -69,16 +70,15 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${spaceGrotesk.variable} ${ibmPlexMono.variable} antialiased`}
+      className={`${spaceGrotesk.variable} ${ibmPlexMono.variable}`}
     >
-      <body className="lg-body">
+      <body className="antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
           enableSystem={false}
-          disableTransitionOnChange
         >
-          {children}
+          <SmoothScroll>{children}</SmoothScroll>
         </ThemeProvider>
       </body>
     </html>

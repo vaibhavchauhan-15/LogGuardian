@@ -11,12 +11,14 @@ import {
 } from "lucide-react";
 import { useRef } from "react";
 
+const easeOut = [0.16, 1, 0.3, 1] as const;
+
 const fadeUpVariant = {
   hidden: { opacity: 0, y: 32 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.6, ease: easeOut },
   },
 };
 
@@ -59,8 +61,14 @@ const features: FeatureCard[] = [
           <span>score</span>
           <span className="text-brand">0.94</span>
         </div>
-        <div className="mt-2 h-2 rounded-full bg-zinc-800">
-          <div className="h-full w-[94%] rounded-full bg-linear-to-r from-brand/45 via-brand/80 to-red-400" />
+        <div className="mt-2 h-1.5 rounded-full bg-[#1a1a1a]">
+          <div
+            className="h-full w-[94%] rounded-full"
+            style={{
+              background:
+                "linear-gradient(to right, rgba(62,207,142,0.5), rgba(62,207,142,0.85), #ff4d4f)",
+            }}
+          />
         </div>
         <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-muted-foreground">
           <span>0.0</span>
@@ -122,7 +130,7 @@ const features: FeatureCard[] = [
 
 export function FeaturesGrid() {
   const ref = useRef<HTMLElement | null>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const inView = useInView(ref, { once: true, margin: "-120px 0px" });
 
   return (
     <motion.section
@@ -133,10 +141,10 @@ export function FeaturesGrid() {
       variants={staggerContainer}
       className="mx-auto w-full max-w-7xl px-4 py-20 md:px-6"
     >
-      <motion.p variants={fadeUpVariant} className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
+      <motion.p variants={fadeUpVariant} className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
         Features
       </motion.p>
-      <motion.h2 variants={fadeUpVariant} className="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">
+      <motion.h2 variants={fadeUpVariant} className="mt-4 text-3xl font-normal tracking-[-0.03em] md:text-5xl">
         Everything you need. Nothing you don&apos;t.
       </motion.h2>
 
@@ -147,16 +155,24 @@ export function FeaturesGrid() {
             <motion.article
               key={feature.title}
               variants={fadeUpVariant}
-              whileHover={{ y: -4 }}
-              className={`rounded-2xl border border-border bg-card p-6 transition-shadow hover:border-brand/30 hover:shadow-[inset_0_0_0_1px_rgba(62,207,142,0.1)] ${
+              whileHover={{ y: -3, transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] } }}
+              className={`group relative overflow-hidden rounded-2xl border border-[#1f1f1f] bg-[#0f0f0f] p-6 transition-all duration-300 hover:border-[#3ecf8e]/20 ${
                 feature.className ?? ""
               }`}
             >
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-brand/30 bg-brand/10 text-brand">
-                <Icon className="h-5 w-5" aria-hidden="true" />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                style={{
+                  boxShadow: "inset 0 0 40px rgba(62,207,142,0.04)",
+                }}
+              />
+
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#3ecf8e]/25 bg-[#3ecf8e]/10 text-[#3ecf8e] transition-all duration-300 group-hover:border-[#3ecf8e]/40 group-hover:bg-[#3ecf8e]/15">
+                <Icon className="h-4 w-4" aria-hidden="true" />
               </span>
-              <h3 className="mt-4 text-xl font-semibold tracking-tight">{feature.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{feature.description}</p>
+              <h3 className="mt-4 text-base font-medium tracking-tight text-[#fafafa]">{feature.title}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-[#898989]">{feature.description}</p>
               {feature.visual}
             </motion.article>
           );

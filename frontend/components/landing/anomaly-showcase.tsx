@@ -3,12 +3,14 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 
+const easeOut = [0.16, 1, 0.3, 1] as const;
+
 const fadeUpVariant = {
   hidden: { opacity: 0, y: 32 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.6, ease: easeOut },
   },
 };
 
@@ -19,7 +21,7 @@ const staggerContainer = {
 
 export function AnomalyShowcase() {
   const ref = useRef<HTMLElement | null>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const inView = useInView(ref, { once: true, margin: "-120px 0px" });
 
   return (
     <motion.section
@@ -30,10 +32,10 @@ export function AnomalyShowcase() {
       className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-20 md:px-6 lg:grid-cols-2 lg:items-center"
     >
       <div>
-        <motion.p variants={fadeUpVariant} className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
+        <motion.p variants={fadeUpVariant} className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
           Anomaly Detection
         </motion.p>
-        <motion.h2 variants={fadeUpVariant} className="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">
+        <motion.h2 variants={fadeUpVariant} className="mt-4 text-3xl font-normal tracking-[-0.03em] md:text-5xl">
           Catch the exact moment things go wrong.
         </motion.h2>
         <motion.p variants={fadeUpVariant} className="mt-5 max-w-xl text-muted-foreground md:text-lg">
