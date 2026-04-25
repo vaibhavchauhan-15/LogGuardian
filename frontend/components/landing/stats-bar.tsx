@@ -3,12 +3,14 @@
 import { motion, useInView, useMotionValue, useSpring } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
+const easeOut = [0.16, 1, 0.3, 1] as const;
+
 const fadeUpVariant = {
   hidden: { opacity: 0, y: 32 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.6, ease: easeOut },
   },
 };
 
@@ -72,17 +74,19 @@ function CountUpStat({ stat, inView, withDivider }: { stat: StatConfig; inView: 
   return (
     <motion.div
       variants={fadeUpVariant}
-      className={`flex flex-1 flex-col items-center px-4 text-center ${withDivider ? "lg:border-r lg:border-border" : ""}`}
+      className={`flex flex-1 flex-col items-center px-8 text-center ${
+        withDivider ? "md:border-r md:border-[#2a2a2a]" : ""
+      }`}
     >
-      <p className="font-mono text-2xl font-semibold text-brand md:text-3xl">{text}</p>
-      <p className="mt-1 text-xs uppercase tracking-[0.14em] text-muted-foreground">{stat.label}</p>
+      <p className="font-mono text-[28px] font-medium leading-none tracking-[-0.02em] text-brand">{text}</p>
+      <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[#555]">{stat.label}</p>
     </motion.div>
   );
 }
 
 export function StatsBar() {
   const ref = useRef<HTMLElement | null>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const inView = useInView(ref, { once: true, margin: "-120px 0px" });
 
   return (
     <motion.section
@@ -90,9 +94,13 @@ export function StatsBar() {
       variants={staggerContainer}
       initial="hidden"
       animate={inView ? "visible" : "hidden"}
-      className="border-y border-border bg-muted/30 py-6"
+      className="relative border-y border-[#1f1f1f] py-8"
+      style={{
+        background:
+          "linear-gradient(to bottom, rgba(17,17,17,0.9), rgba(10,10,10,0.9))",
+      }}
     >
-      <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 md:flex-row md:items-center md:justify-between md:gap-0 md:px-6">
+      <div className="mx-auto flex max-w-5xl flex-col gap-5 px-4 md:flex-row md:items-center md:gap-0 md:px-6">
         {stats.map((stat, index) => (
           <CountUpStat key={stat.label} stat={stat} inView={inView} withDivider={index < stats.length - 1} />
         ))}

@@ -14,10 +14,13 @@ export function Hero() {
     <section className="relative flex min-h-dvh items-center justify-center overflow-hidden px-4 pb-14 pt-28 md:px-6 md:pb-20 md:pt-32">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-20"
+        className="pointer-events-none absolute inset-0"
         style={{
-          backgroundImage: "radial-gradient(circle at 1px 1px, rgba(250,250,250,0.15) 1px, transparent 0)",
-          backgroundSize: "22px 22px",
+          backgroundImage:
+            "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.12) 1px, transparent 0)",
+          backgroundSize: "32px 32px",
+          maskImage:
+            "radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%)",
         }}
       />
       <div
@@ -25,12 +28,17 @@ export function Hero() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at 50% -10%, rgba(62,207,142,0.15), rgba(62,207,142,0.03) 36%, transparent 60%)",
+            "radial-gradient(ellipse 60% 40% at 50% -5%, rgba(62,207,142,0.18), transparent 65%)",
         }}
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute left-0 right-0 top-[60%] h-px bg-linear-to-r from-transparent via-brand/40 to-transparent"
+        className="pointer-events-none absolute left-0 right-0 top-[58%] h-px"
+        style={{
+          background:
+            "linear-gradient(to right, transparent, rgba(62,207,142,0.45), transparent)",
+          animation: "scanPulse 4s ease-in-out infinite",
+        }}
       />
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center text-center">
@@ -40,7 +48,10 @@ export function Hero() {
           transition={{ duration: 0.6, delay: 0, ease: easeOut }}
           className="inline-flex items-center gap-2 rounded-full border border-brand/30 bg-brand/10 px-4 py-1.5 font-mono text-xs text-brand"
         >
-          <span className="h-2 w-2 rounded-full bg-brand" aria-hidden="true" />
+          <span className="relative flex h-2 w-2 items-center justify-center" aria-hidden="true">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-60" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand" />
+          </span>
           Open Source - Free Forever - v1.0
         </motion.p>
 
@@ -48,7 +59,7 @@ export function Hero() {
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1, ease: easeOut }}
-          className="mt-7 max-w-4xl text-4xl font-normal leading-none tracking-[-0.04em] sm:text-5xl md:text-6xl lg:text-[72px]"
+          className="mt-7 max-w-4xl text-4xl font-normal leading-[0.97] tracking-[-0.05em] sm:text-5xl md:text-6xl lg:text-[80px]"
         >
           Catch failures
           <br />
