@@ -15,6 +15,7 @@ const defaultSuggestions: Record<DashboardType, string> = {
   ecommerce: "Checkout Failure Tracker",
   saas: "API Health Dashboard",
   api: "External API Reliability Guard",
+  
 };
 
 const typeOptions: DashboardType[] = ["portfolio", "ecommerce", "saas", "api"];
