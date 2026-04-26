@@ -11,6 +11,7 @@ import {
 } from "@/lib/api";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-provider";
 
 const levelOptions = ["", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"];
 
@@ -23,7 +24,7 @@ function classificationChip(classification: Classification) {
 export function LogViewerApp() {
   const [logs, setLogs] = useState<LogRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState("");
+  const { showToast } = useToast();
 
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -41,7 +42,6 @@ export function LogViewerApp() {
 
   async function refresh(targetPage = page) {
     setLoading(true);
-    setFeedback("");
     try {
       const result = await getLogs({
         page: targetPage,
@@ -56,7 +56,11 @@ export function LogViewerApp() {
       setTotal(result.total);
       setPage(result.page);
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Unable to load logs");
+      showToast({
+        type: "error",
+        title: "Unable to load logs",
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setLoading(false);
     }
@@ -112,8 +116,6 @@ export function LogViewerApp() {
             <ThemeToggle />
           </div>
         </section>
-
-        {feedback ? <div className="bg-card border border-border shadow-none rounded-[12px] p-6 rounded-xl px-4 py-3 text-sm">{feedback}</div> : null}
 
         <section className="mt-6 bg-card border border-border shadow-none rounded-[12px] p-6">
           <div className="flex flex-wrap items-end justify-between gap-3">

@@ -29,6 +29,28 @@ type SupabaseUserResponse = {
   };
 };
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function normalizeUserId(rawId?: string): string | null {
+  const trimmed = rawId?.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (UUID_PATTERN.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("lg-dev-")) {
+    const possibleUuid = trimmed.slice("lg-dev-".length);
+    if (UUID_PATTERN.test(possibleUuid)) {
+      return possibleUuid;
+    }
+  }
+
+  return null;
+}
+
 function getTokenFromParams(params: URLSearchParams): string | null {
   const token = params.get("access_token")?.trim() || params.get("id_token")?.trim();
   return token || null;
@@ -69,7 +91,7 @@ function normalizeUserContext(user: {
   fullName?: string;
   fallbackName?: string;
 }): ResolvedUserContext | null {
-  const userId = user.id?.trim();
+  const userId = normalizeUserId(user.id);
   if (!userId) {
     return null;
   }
@@ -169,9 +191,10 @@ export async function resolveAndStoreUserContext(): Promise<ResolvedUserContext 
     return null;
   }
 
-  const existingUserId = window.localStorage.getItem(USER_ID_STORAGE_KEY);
+  const existingUserId = normalizeUserId(window.localStorage.getItem(USER_ID_STORAGE_KEY) ?? undefined);
   const existingEmail = window.localStorage.getItem(USER_EMAIL_STORAGE_KEY);
   if (existingUserId) {
+    window.localStorage.setItem(USER_ID_STORAGE_KEY, existingUserId);
     return {
       userId: existingUserId,
       email: existingEmail,
@@ -214,8 +237,8 @@ export async function resolveAndStoreUserContext(): Promise<ResolvedUserContext 
   }
 
   if (process.env.NODE_ENV !== "production") {
-    const existingDevId = window.localStorage.getItem(USER_ID_STORAGE_KEY)?.trim();
-    const devUserId = existingDevId || `lg-dev-${crypto.randomUUID()}`;
+    const existingDevId = normalizeUserId(window.localStorage.getItem(USER_ID_STORAGE_KEY) ?? undefined);
+    const devUserId = existingDevId || crypto.randomUUID();
     const devEmail = window.localStorage.getItem(USER_EMAIL_STORAGE_KEY)?.trim() || `${devUserId}@logguardian.local`;
     window.localStorage.setItem(USER_ID_STORAGE_KEY, devUserId);
     window.localStorage.setItem(USER_EMAIL_STORAGE_KEY, devEmail);

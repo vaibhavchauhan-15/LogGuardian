@@ -3,6 +3,7 @@ from functools import lru_cache
 import base64
 import json
 from typing import Optional
+from uuid import UUID
 
 from fastapi import Header, HTTPException
 
@@ -59,12 +60,26 @@ class RequestUserContext:
     email: Optional[str] = None
 
 
+def _normalize_uuid_user_id(value: str) -> Optional[str]:
+    candidate = value.strip()
+    if not candidate:
+        return None
+
+    if candidate.startswith("lg-dev-"):
+        candidate = candidate[len("lg-dev-") :].strip()
+
+    try:
+        return str(UUID(candidate))
+    except ValueError:
+        return None
+
+
 def get_request_user_context(
     x_user_id: Optional[str] = Header(default=None, alias="X-User-Id"),
     x_user_email: Optional[str] = Header(default=None, alias="X-User-Email"),
     authorization: Optional[str] = Header(default=None, alias="Authorization"),
 ) -> RequestUserContext:
-    user_id = (x_user_id or "").strip()
+    user_id = _normalize_uuid_user_id(x_user_id or "") or ""
     email = (x_user_email or "").strip() or None
 
     if not user_id and authorization:
@@ -80,7 +95,7 @@ def get_request_user_context(
             try:
                 decoded_payload = base64.b64decode(normalized).decode("utf-8")
                 claims = json.loads(decoded_payload)
-                claim_sub = str(claims.get("sub") or "").strip()
+                claim_sub = _normalize_uuid_user_id(str(claims.get("sub") or ""))
                 claim_email = str(claims.get("email") or "").strip() or None
                 if claim_sub:
                     user_id = claim_sub
@@ -90,6 +105,9 @@ def get_request_user_context(
                 pass
 
     if not user_id:
-        raise HTTPException(status_code=401, detail="Missing user identity (X-User-Id or Bearer token)")
+        raise HTTPException(
+            status_code=401,
+            detail="Missing or invalid user identity (X-User-Id or Bearer token with UUID sub)",
+        )
 
     return RequestUserContext(user_id=user_id, email=email)

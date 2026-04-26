@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Lightbulb, PlusCircle } from "lucide-react";
+import { Check, ChevronDown, Lightbulb, PlusCircle } from "lucide-react";
 
 import { type DashboardType, createDashboard } from "@/lib/api";
 import { resolveAndStoreUserContext } from "@/lib/user-context";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-provider";
 
 const defaultSuggestions: Record<DashboardType, string> = {
   portfolio: "Personal Site Monitoring",
@@ -18,13 +19,25 @@ const defaultSuggestions: Record<DashboardType, string> = {
 
 const typeOptions: DashboardType[] = ["portfolio", "ecommerce", "saas", "api"];
 
+function formatTypeLabel(value: DashboardType) {
+  if (value === "saas") {
+    return "Saas";
+  }
+  if (value === "api") {
+    return "Api";
+  }
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 export function CreateDashboardApp() {
   const [name, setName] = useState("");
   const [type, setType] = useState<DashboardType>("saas");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [authReady, setAuthReady] = useState(false);
-  const [feedback, setFeedback] = useState("");
+  const [typeMenuOpen, setTypeMenuOpen] = useState(false);
+  const typeMenuRef = useRef<HTMLDivElement | null>(null);
+  const { showToast } = useToast();
 
   const suggestion = useMemo(() => defaultSuggestions[type], [type]);
 
@@ -54,12 +67,28 @@ export function CreateDashboardApp() {
     };
   }, []);
 
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      if (!typeMenuRef.current?.contains(event.target as Node)) {
+        setTypeMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, []);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setFeedback("");
 
     if (!name.trim()) {
-      setFeedback("Dashboard name is required.");
+      showToast({
+        type: "error",
+        title: "Dashboard name is required",
+      });
       return;
     }
 
@@ -73,76 +102,132 @@ export function CreateDashboardApp() {
         description: description.trim() || undefined,
       });
 
-      setFeedback("Dashboard created successfully.");
+      showToast({
+        type: "success",
+        title: "Dashboard created successfully",
+      });
       window.location.assign(`/dashboard/${created.id}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to create dashboard";
       if (message.includes("Missing user identity") || message.includes("Missing X-User-Id")) {
-        setFeedback("Please sign in before creating dashboards.");
+        showToast({
+          type: "error",
+          title: "Please sign in before creating dashboards",
+        });
         return;
       }
-      setFeedback(message);
+      showToast({
+        type: "error",
+        title: "Unable to create dashboard",
+        description: message,
+      });
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <div className="lg-shell">
-      <main className="lg-section pt-10">
+    <div className="min-h-screen bg-background text-foreground">
+      <main className="mx-auto w-full max-w-5xl px-4 py-10 md:px-6 md:py-14">
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="bg-card border border-border shadow-none rounded-[12px] p-6 max-w-3xl"
+          className="mx-auto w-full max-w-4xl rounded-2xl border border-border bg-card p-6 md:p-8"
         >
-          <p className="lg-kicker">Create Workspace</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Create Dashboard</h1>
-          <p className="lg-subtle mt-3 text-sm">
+          <p className="inline-flex items-center gap-2 rounded-full border border-brand/30 bg-brand/10 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-brand">
+            Create Workspace
+          </p>
+          <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">Create Dashboard</h1>
+          <p className="mt-3 max-w-2xl text-sm text-muted-foreground md:text-base">
             Every dashboard is a separate project boundary with isolated metrics and sessions.
           </p>
 
-          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-            <label className="block text-sm">
-              <span className="mb-1 block lg-subtle">Name</span>
-              <input
-                className="lg-input h-11"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Payments Reliability Radar"
-                maxLength={120}
-                required
-              />
-            </label>
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block text-sm">
+                <span className="mb-2 block font-medium text-muted-foreground">Name</span>
+                <input
+                  className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition placeholder:text-muted-foreground focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-ring/60"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Payments Reliability Radar"
+                  maxLength={120}
+                  required
+                />
+              </label>
 
-            <label className="block text-sm">
-              <span className="mb-1 block lg-subtle">Type</span>
-              <select
-                className="lg-input h-11"
-                value={type}
-                onChange={(event) => setType(event.target.value as DashboardType)}
+              <label className="block text-sm">
+                <span className="mb-2 block font-medium text-muted-foreground">Type</span>
+                <div className="relative" ref={typeMenuRef}>
+                  <button
+                    type="button"
+                    aria-haspopup="listbox"
+                    aria-expanded={typeMenuOpen}
+                    onClick={() => setTypeMenuOpen((prev) => !prev)}
+                    className="flex h-11 w-full items-center justify-between rounded-lg border border-input bg-background px-3 text-left text-sm outline-none transition hover:border-brand/50 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-ring/60"
+                  >
+                    <span>{formatTypeLabel(type)}</span>
+                    <ChevronDown
+                      className={`h-4 w-4 text-muted-foreground transition-transform ${typeMenuOpen ? "rotate-180" : ""}`}
+                      aria-hidden="true"
+                    />
+                  </button>
+
+                  {typeMenuOpen ? (
+                    <ul
+                      role="listbox"
+                      aria-label="Dashboard type"
+                      className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-border bg-card"
+                    >
+                      {typeOptions.map((value) => {
+                        const isSelected = value === type;
+
+                        return (
+                          <li key={value} role="option" aria-selected={isSelected}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setType(value);
+                                setTypeMenuOpen(false);
+                              }}
+                              className={`flex w-full items-center justify-between px-3 py-2 text-sm transition ${
+                                isSelected
+                                  ? "bg-brand/20 text-foreground"
+                                  : "text-foreground hover:bg-brand/10 hover:text-brand"
+                              }`}
+                            >
+                              <span>{formatTypeLabel(value)}</span>
+                              {isSelected ? <Check className="h-4 w-4 text-brand" aria-hidden="true" /> : null}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
+                </div>
+              </label>
+            </div>
+
+            <div className="rounded-xl border border-border bg-muted/20 p-4">
+              <p className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Auto Suggestion</p>
+              <p className="mt-2 text-sm text-foreground">{suggestion}</p>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="mt-3"
+                onClick={() => void applySuggestion()}
               >
-                {typeOptions.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <div className="rounded-xl border border-(--border) bg-(--bg-card border border-border shadow-none rounded-[12px] p-6-strong) p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.13em] lg-subtle">Auto suggestion</p>
-              <p className="mt-2 text-sm">{suggestion}</p>
-              <Button type="button" size="sm" variant="secondary" className="mt-3" onClick={() => void applySuggestion()}>
                 <Lightbulb className="h-4 w-4" aria-hidden="true" />
                 Use Suggestion
               </Button>
             </div>
 
             <label className="block text-sm">
-              <span className="mb-1 block lg-subtle">Description</span>
+              <span className="mb-2 block font-medium text-muted-foreground">Description</span>
               <textarea
-                className="lg-input min-h-24 resize-y"
+                className="min-h-28 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition placeholder:text-muted-foreground focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-ring/60"
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
                 placeholder="Tracks API and runtime anomalies for production incidents."
@@ -150,18 +235,26 @@ export function CreateDashboardApp() {
               />
             </label>
 
-            {feedback ? <p className="rounded-xl border border-(--border) px-3 py-2 text-sm">{feedback}</p> : null}
-
-            <div className="flex flex-wrap gap-2">
-              <Button type="submit" size="sm" disabled={submitting || !authReady}>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Button
+                type="submit"
+                size="sm"
+                variant="brand"
+                disabled={submitting || !authReady}
+              >
                 <PlusCircle className="h-4 w-4" aria-hidden="true" />
                 {submitting ? "Creating..." : authReady ? "Create Dashboard" : "Preparing Session..."}
               </Button>
-              <Link href="/dashboard">
-                <Button type="button" size="sm" variant="secondary">
+              <Button
+                asChild
+                type="button"
+                size="sm"
+                variant="brandOutline"
+              >
+                <Link href="/dashboard">
                   Back to Dashboards
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
           </form>
         </motion.section>

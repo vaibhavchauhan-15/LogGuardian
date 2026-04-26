@@ -52,6 +52,7 @@ import {
   DialogActionButton,
 } from "@/components/ui/dialog";
 import { OnboardingDialog } from "@/components/ui/onboarding-dialog";
+import { useToast } from "@/components/ui/toast-provider";
 
 const ErrorTrendChart = dynamic(
   () => import("@/components/dashboard/error-trend-chart").then((mod) => mod.ErrorTrendChart),
@@ -145,13 +146,13 @@ export function DashboardApp() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isTraining, setIsTraining] = useState(false);
-  const [feedback, setFeedback] = useState<string>("");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileName, setProfileName] = useState("User");
   const [profileEmail, setProfileEmail] = useState<string | null>(null);
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
 
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const { showToast } = useToast();
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / pageSize)), [pageSize, total]);
 
@@ -172,7 +173,6 @@ export function DashboardApp() {
 
   async function refreshAll(targetPage = page) {
     setIsLoading(true);
-    setFeedback("");
     try {
       const [overviewData, logsData, status, alertsData] = await Promise.all([
         getAnalytics(14),
@@ -194,7 +194,11 @@ export function DashboardApp() {
       setPendingAlerts(alertsData.total);
       setPage(logsData.page);
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Failed to load dashboard data");
+      showToast({
+        type: "error",
+        title: "Failed to load dashboard data",
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -406,12 +410,14 @@ export function DashboardApp() {
   async function handleIngest(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!form.message.trim()) {
-      setFeedback("Message is required.");
+      showToast({
+        type: "error",
+        title: "Message is required",
+      });
       return;
     }
 
     setIsSubmitting(true);
-    setFeedback("");
     try {
       const result = await ingestLog({
         service: form.service,
@@ -419,15 +425,18 @@ export function DashboardApp() {
         message: form.message,
       });
       setForm((prev) => ({ ...prev, message: "" }));
-      setFeedback(
-        result.alert_triggered
-          ? "Critical log ingested and alert triggered."
-          : "Log ingested successfully."
-      );
+      showToast({
+        type: result.alert_triggered ? "error" : "success",
+        title: result.alert_triggered ? "Critical log ingested and alert triggered" : "Log ingested successfully",
+      });
       setLiveLogs((prev) => [result.log, ...prev].slice(0, 12));
       await refreshAll(1);
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Failed to ingest log");
+      showToast({
+        type: "error",
+        title: "Failed to ingest log",
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -436,19 +445,29 @@ export function DashboardApp() {
   async function handleUpload(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!uploadFile) {
-      setFeedback("Please select a file first.");
+      showToast({
+        type: "error",
+        title: "Please select a file first",
+      });
       return;
     }
 
     setIsUploading(true);
-    setFeedback("");
     try {
       const result = await uploadLogFile(uploadFile);
-      setFeedback(`Upload complete: ${result.ingested} logs inserted, model trained: ${result.trained}`);
+      showToast({
+        type: "success",
+        title: "Upload complete",
+        description: `${result.ingested} logs inserted, model trained: ${result.trained}`,
+      });
       setUploadFile(null);
       await refreshAll(1);
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Failed to upload file");
+      showToast({
+        type: "error",
+        title: "Failed to upload file",
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setIsUploading(false);
     }
@@ -456,13 +475,20 @@ export function DashboardApp() {
 
   async function handleTrainModel() {
     setIsTraining(true);
-    setFeedback("");
     try {
       const result = await trainModel();
-      setFeedback(result.message);
+      showToast({
+        type: "success",
+        title: "Model training completed",
+        description: result.message,
+      });
       await refreshAll(page);
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Failed to train model");
+      showToast({
+        type: "error",
+        title: "Failed to train model",
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setIsTraining(false);
     }
@@ -565,8 +591,6 @@ export function DashboardApp() {
             Refresh
           </Button>
         </div>
-
-        {feedback ? <div className="bg-card border border-border shadow-none rounded-[12px] p-6 mt-4 rounded-xl px-4 py-3 text-sm">{feedback}</div> : null}
 
         <section className="mt-6 grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
           <ActiveAnomalyTracker compact />

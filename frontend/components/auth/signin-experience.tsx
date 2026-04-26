@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { AlertCircle, Loader2, Radio, ShieldAlert } from "lucide-react";
+import { Loader2, Radio, ShieldAlert } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-provider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DemoLevel = "DEBUG" | "INFO" | "WARN" | "ERROR" | "CRITICAL";
@@ -206,18 +208,45 @@ const STATS = [
 
 export function SignInExperience() {
   const prefersReducedMotion = useReducedMotion();
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const oauthErrorMessage = searchParams.get("error_description") ?? searchParams.get("error");
+  const canAnimate = isClient && !prefersReducedMotion;
+  const { showToast } = useToast();
 
   const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "") ?? "";
   const authEnabled  = Boolean(supabaseUrl);
 
+  useEffect(() => {
+    if (!oauthErrorMessage) {
+      return;
+    }
+
+    showToast({
+      type: "error",
+      title: "Sign-in failed",
+      description: oauthErrorMessage,
+    });
+  }, [oauthErrorMessage, showToast]);
+
   const handleGoogleSignIn = async () => {
-    if (!authEnabled || isSigningIn) return;
+    if (isSigningIn) return;
+
+    if (!authEnabled) {
+      showToast({
+        type: "error",
+        title: "Google sign-in is not configured",
+        description: "Please set Supabase public environment keys.",
+      });
+      return;
+    }
+
     setIsSigningIn(true);
-    setErrorMessage(null);
     try {
       const supabase  = createClient();
       const next      = searchParams.get("next") ?? "/dashboard";
@@ -226,9 +255,26 @@ export function SignInExperience() {
         provider: "google",
         options: { redirectTo, queryParams: { access_type: "offline", prompt: "consent" } },
       });
-      if (error) { setErrorMessage(error.message); setIsSigningIn(false); }
+      if (error) {
+        showToast({
+          type: "error",
+          title: "Unable to start Google sign-in",
+          description: error.message,
+        });
+        setIsSigningIn(false);
+        return;
+      }
+
+      showToast({
+        type: "info",
+        title: "Redirecting to Google",
+      });
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Sign-in failed. Please try again.");
+      showToast({
+        type: "error",
+        title: "Sign-in failed",
+        description: err instanceof Error ? err.message : "Please try again.",
+      });
       setIsSigningIn(false);
     }
   };
@@ -239,11 +285,11 @@ export function SignInExperience() {
       {/* Ambient blobs */}
       <motion.div aria-hidden className="pointer-events-none absolute -left-32 top-[-20%] h-[55dvh] w-[60vw] rounded-full blur-3xl"
         style={{ background: "radial-gradient(circle,rgba(62,207,142,0.16),transparent 60%)" }}
-        animate={prefersReducedMotion ? undefined : { x: [0,22,-10,0], y: [0,14,-8,0] }}
+        animate={canAnimate ? { x: [0,22,-10,0], y: [0,14,-8,0] } : undefined}
         transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }} />
       <motion.div aria-hidden className="pointer-events-none absolute -right-32 bottom-[-20%] h-[55dvh] w-[60vw] rounded-full blur-3xl"
         style={{ background: "radial-gradient(circle,rgba(114,188,255,0.18),transparent 62%)" }}
-        animate={prefersReducedMotion ? undefined : { x: [0,-18,8,0], y: [0,-12,10,0] }}
+        animate={canAnimate ? { x: [0,-18,8,0], y: [0,-12,10,0] } : undefined}
         transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }} />
 
       {/* Grid */}
@@ -253,7 +299,7 @@ export function SignInExperience() {
       {/* ── Main card ─────────────────────────────────────────────────────── */}
       <motion.section
         className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-border bg-card shadow-xl"
-        animate={prefersReducedMotion ? undefined : { borderColor: isSigningIn ? "rgba(114,188,255,0.45)" : undefined }}
+        animate={canAnimate ? { borderColor: isSigningIn ? "rgba(114,188,255,0.45)" : undefined } : undefined}
         transition={{ duration: 0.3 }}>
 
         {/* inner glow */}
@@ -297,44 +343,27 @@ export function SignInExperience() {
               ))}
             </div>
 
-            {/* Error */}
-            <AnimatePresence>
-              {(errorMessage ?? oauthErrorMessage) && (
-                <motion.div key="err"
-                  initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                  className="mt-4 flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm text-red-600 dark:text-red-400"
-                  role="alert">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>{errorMessage ?? oauthErrorMessage}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             {/* CTA — custom button, always visible on both themes */}
             <div className="mt-5">
               <motion.div
-                whileHover={!isSigningIn && authEnabled && !prefersReducedMotion ? { scale: 1.015 } : undefined}
-                whileTap={!isSigningIn && authEnabled && !prefersReducedMotion ? { scale: 0.985 } : undefined}>
-                <button
+                whileHover={!isSigningIn && canAnimate ? { scale: 1.015 } : undefined}
+                whileTap={!isSigningIn && canAnimate ? { scale: 0.985 } : undefined}>
+                <Button
                   id="google-signin-btn"
                   type="button"
                   onClick={() => void handleGoogleSignIn()}
-                  disabled={!authEnabled || isSigningIn}
-                  className="relative w-full overflow-hidden rounded-full disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3ecf8e]"
-                  style={{
-                    background: "linear-gradient(135deg,#1a73e8 0%,#0d5bca 100%)",
-                    boxShadow: "0 2px 16px rgba(26,115,232,0.45), 0 1px 3px rgba(0,0,0,0.18)",
-                  }}
+                  disabled={isSigningIn}
+                  className="relative h-12 w-full overflow-hidden bg-brand px-6 text-sm font-semibold text-black hover:bg-brand/90"
                 >
                   {/* Subtle shine overlay */}
                   <span className="pointer-events-none absolute inset-0 rounded-full"
-                    style={{ background: "linear-gradient(180deg,rgba(255,255,255,0.14) 0%,transparent 60%)" }} />
+                    style={{ background: "linear-gradient(180deg,rgba(255,255,255,0.18) 0%,transparent 60%)" }} />
 
                   <span className="relative flex h-12 items-center justify-center gap-3 px-6">
                     {isSigningIn ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin" style={{ color: "#fff" }} />
-                        <span className="text-sm font-semibold" style={{ color: "#fff" }}>Signing in…</span>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm font-semibold">Signing in…</span>
                       </>
                     ) : (
                       <>
@@ -347,11 +376,11 @@ export function SignInExperience() {
                             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                           </svg>
                         </span>
-                        <span className="text-sm font-semibold tracking-wide" style={{ color: "#fff" }}>Continue with Google</span>
+                        <span className="text-sm font-semibold tracking-wide">Continue with Google</span>
                       </>
                     )}
                   </span>
-                </button>
+                </Button>
               </motion.div>
 
               {authEnabled ? (

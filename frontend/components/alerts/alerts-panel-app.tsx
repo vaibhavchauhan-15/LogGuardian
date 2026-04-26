@@ -13,6 +13,7 @@ import {
 } from "@/lib/api";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-provider";
 
 function priorityChip(priority: AlertPriority) {
   if (priority === "critical") return "bg-red-500/15 text-red-600 dark:text-red-300";
@@ -24,7 +25,6 @@ function priorityChip(priority: AlertPriority) {
 export function AlertsPanelApp() {
   const [alerts, setAlerts] = useState<AlertRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [pageSize] = useState(25);
@@ -32,10 +32,10 @@ export function AlertsPanelApp() {
   const [statusFilter, setStatusFilter] = useState<"" | AlertStatus>("pending");
   const [priorityFilter, setPriorityFilter] = useState<"" | AlertPriority>("");
   const [serviceFilter, setServiceFilter] = useState("");
+  const { showToast } = useToast();
 
   async function refresh(targetPage = page) {
     setLoading(true);
-    setFeedback("");
     try {
       const result = await getAlerts({
         page: targetPage,
@@ -48,7 +48,11 @@ export function AlertsPanelApp() {
       setTotal(result.total);
       setPage(result.page);
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Unable to load alerts");
+      showToast({
+        type: "error",
+        title: "Unable to load alerts",
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setLoading(false);
     }
@@ -81,10 +85,17 @@ export function AlertsPanelApp() {
   async function handleResolve(alertId: string) {
     try {
       await resolveAlert(alertId, "dashboard-operator");
-      setFeedback("Alert resolved.");
+      showToast({
+        type: "success",
+        title: "Alert resolved",
+      });
       await refresh(page);
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Failed to resolve alert");
+      showToast({
+        type: "error",
+        title: "Failed to resolve alert",
+        description: error instanceof Error ? error.message : undefined,
+      });
     }
   }
 
@@ -100,8 +111,6 @@ export function AlertsPanelApp() {
             <ThemeToggle />
           </div>
         </section>
-
-        {feedback ? <div className="bg-card border border-border shadow-none rounded-[12px] p-6 rounded-xl px-4 py-3 text-sm">{feedback}</div> : null}
 
         <section className="mt-6 bg-card border border-border shadow-none rounded-[12px] p-6">
           <div className="flex flex-wrap items-end justify-between gap-3">

@@ -7,6 +7,8 @@ import { ArrowRight, LayoutDashboard, PlusCircle, RefreshCcw } from "lucide-reac
 
 import { type DashboardSummary, listDashboards } from "@/lib/api";
 import { resolveAndStoreUserContext } from "@/lib/user-context";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-provider";
 
 function dashboardStatusChip(status: DashboardSummary["status"]) {
   if (status === "critical") {
@@ -44,7 +46,7 @@ function anomalyRateColor(value: number) {
 export function DashboardProjectsApp() {
   const [dashboards, setDashboards] = useState<DashboardSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState("");
+  const { showToast } = useToast();
 
   const criticalCount = useMemo(
     () => dashboards.filter((d) => d.status === "critical").length,
@@ -53,7 +55,6 @@ export function DashboardProjectsApp() {
 
   async function loadDashboards() {
     setLoading(true);
-    setFeedback("");
     try {
       await resolveAndStoreUserContext();
       const response = await listDashboards();
@@ -61,9 +62,18 @@ export function DashboardProjectsApp() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to load dashboards";
       if (message.includes("Missing user identity") || message.includes("Missing X-User-Id")) {
-        setFeedback("Please sign in first to view your dashboards.");
+        showToast({
+          type: "error",
+          title: "Please sign in first to view your dashboards",
+        });
+      } else if (message.includes("Failed to fetch") || message.includes("NetworkError") || message.includes("Load failed")) {
+        // Silent network interruptions are expected during local dev.
       } else {
-        setFeedback(message);
+        showToast({
+          type: "error",
+          title: "Unable to load dashboards",
+          description: message,
+        });
       }
       setDashboards([]);
     } finally {
@@ -99,14 +109,12 @@ export function DashboardProjectsApp() {
               <RefreshCcw className="h-3.5 w-3.5" aria-hidden="true" />
               Refresh
             </button>
-            <Link
-              id="create-dashboard-btn"
-              href="/create-dashboard"
-              className="flex items-center gap-1.5 rounded-md bg-[#3ecf8e] px-3 py-1.5 text-xs font-semibold text-[#0a0a0a] transition-all duration-150 hover:bg-[#5af0a8]"
-            >
-              <PlusCircle className="h-3.5 w-3.5" aria-hidden="true" />
-              Create Dashboard
-            </Link>
+            <Button id="create-dashboard-btn" asChild size="sm" variant="brand" className="h-8 rounded-md px-3 text-xs">
+              <Link href="/create-dashboard" className="flex items-center gap-1.5">
+                <PlusCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                Create Dashboard
+              </Link>
+            </Button>
           </div>
         </div>
       </header>
@@ -156,15 +164,6 @@ export function DashboardProjectsApp() {
           </div>
         </section>
 
-        {/* ── Feedback ── */}
-        {feedback ? (
-          <div className="px-5 pt-6 sm:px-8 lg:px-10">
-            <p className="rounded-xl border border-red-900/40 bg-red-950/20 px-4 py-3 font-['IBM_Plex_Mono'] text-xs text-red-300">
-              {feedback}
-            </p>
-          </div>
-        ) : null}
-
         {/* ── Cards Grid ── */}
         <section className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2 lg:grid-cols-3 lg:p-8">
           {loading ? (
@@ -177,13 +176,12 @@ export function DashboardProjectsApp() {
                 <LayoutDashboard className="h-5 w-5 text-[#555]" aria-hidden="true" />
               </div>
               <p className="font-['IBM_Plex_Mono'] text-sm text-[#898989]">No dashboards yet</p>
-              <Link
-                href="/create-dashboard"
-                className="flex items-center gap-1.5 rounded-md bg-[#3ecf8e] px-3 py-1.5 text-xs font-semibold text-[#0a0a0a] transition-all duration-150 hover:bg-[#5af0a8]"
-              >
-                <PlusCircle className="h-3.5 w-3.5" aria-hidden="true" />
-                Create your first dashboard
-              </Link>
+              <Button asChild size="sm" variant="brand" className="h-8 rounded-md px-3 text-xs">
+                <Link href="/create-dashboard" className="flex items-center gap-1.5">
+                  <PlusCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                  Create your first dashboard
+                </Link>
+              </Button>
             </div>
           ) : (
             dashboards.map((dashboard, index) => {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { ToastProvider } from "@/components/ui/toast-provider";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
@@ -69,7 +70,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${spaceGrotesk.variable} ${ibmPlexMono.variable} antialiased`}
+      className={`${spaceGrotesk.variable} ${ibmPlexMono.variable} antialiased dark`}
     >
       <body className="lg-body">
         <ThemeProvider
@@ -78,7 +79,7 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          {children}
+          <ToastProvider>{children}</ToastProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/toast-provider";
 
 type DashboardProjectDetailAppProps = {
   dashboardId: string;
@@ -169,7 +170,6 @@ export function DashboardProjectDetailApp({ dashboardId }: DashboardProjectDetai
   const [range, setRange] = useState<(typeof rangeOptions)[number]["value"]>("24h");
   const [severity, setSeverity] = useState<"" | Classification>("");
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState("");
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [pasteLogs, setPasteLogs] = useState("");
   const [pasteService, setPasteService] = useState("unknown");
@@ -178,6 +178,7 @@ export function DashboardProjectDetailApp({ dashboardId }: DashboardProjectDetai
   const [uploadInputKey, setUploadInputKey] = useState(0);
   const [isIngesting, setIsIngesting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const { showToast } = useToast();
 
   async function loadDashboardTitle() {
     try {
@@ -192,7 +193,6 @@ export function DashboardProjectDetailApp({ dashboardId }: DashboardProjectDetai
 
   async function refreshMetrics() {
     setLoading(true);
-    setFeedback("");
 
     try {
       await resolveAndStoreUserContext();
@@ -207,9 +207,16 @@ export function DashboardProjectDetailApp({ dashboardId }: DashboardProjectDetai
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to load dashboard metrics";
       if (message.includes("Missing user identity") || message.includes("Missing X-User-Id")) {
-        setFeedback("Please sign in before opening dashboard analytics.");
+        showToast({
+          type: "error",
+          title: "Please sign in before opening dashboard analytics",
+        });
       } else {
-        setFeedback(message);
+        showToast({
+          type: "error",
+          title: "Unable to load dashboard metrics",
+          description: message,
+        });
       }
       setMetrics(null);
     } finally {
@@ -268,12 +275,14 @@ export function DashboardProjectDetailApp({ dashboardId }: DashboardProjectDetai
 
     const logs = parsePastedLogs(pasteLogs, pasteService, pasteLevel);
     if (!logs.length) {
-      setFeedback("Paste at least one valid log line or JSON log object.");
+      showToast({
+        type: "error",
+        title: "Paste at least one valid log line or JSON object",
+      });
       return;
     }
 
     setIsIngesting(true);
-    setFeedback("");
 
     try {
       await resolveAndStoreUserContext();
@@ -290,10 +299,18 @@ export function DashboardProjectDetailApp({ dashboardId }: DashboardProjectDetai
 
       setPasteLogs("");
       await refreshMetrics();
-      setFeedback(`Pasted ingestion complete: ${result.ingested} logs inserted.`);
+      showToast({
+        type: "success",
+        title: "Pasted logs ingested",
+        description: `${result.ingested} logs inserted.`,
+      });
       setIsUploadDialogOpen(false);
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Unable to ingest pasted logs");
+      showToast({
+        type: "error",
+        title: "Unable to ingest pasted logs",
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setIsIngesting(false);
     }
@@ -303,12 +320,14 @@ export function DashboardProjectDetailApp({ dashboardId }: DashboardProjectDetai
     event.preventDefault();
 
     if (!uploadFile) {
-      setFeedback("Please choose a CSV, JSON, or TXT file first.");
+      showToast({
+        type: "error",
+        title: "Please choose a CSV, JSON, or TXT file first",
+      });
       return;
     }
 
     setIsUploading(true);
-    setFeedback("");
 
     try {
       await resolveAndStoreUserContext();
@@ -316,10 +335,18 @@ export function DashboardProjectDetailApp({ dashboardId }: DashboardProjectDetai
       setUploadFile(null);
       setUploadInputKey((previous) => previous + 1);
       await refreshMetrics();
-      setFeedback(`Upload complete: ${result.ingested} logs inserted, model trained: ${result.trained}.`);
+      showToast({
+        type: "success",
+        title: "Upload complete",
+        description: `${result.ingested} logs inserted, model trained: ${result.trained}.`,
+      });
       setIsUploadDialogOpen(false);
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Unable to upload logs");
+      showToast({
+        type: "error",
+        title: "Unable to upload logs",
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setIsUploading(false);
     }
@@ -402,8 +429,6 @@ export function DashboardProjectDetailApp({ dashboardId }: DashboardProjectDetai
             </div>
           ) : null}
         </section>
-
-        {feedback ? <p className="mt-4 bg-card border border-border shadow-none rounded-[12px] p-6 px-4 py-3 text-sm">{feedback}</p> : null}
 
         <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
           <DialogContent size="lg">
