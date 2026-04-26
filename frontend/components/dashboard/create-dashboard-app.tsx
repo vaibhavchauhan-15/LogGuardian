@@ -239,7 +239,8 @@ export function CreateDashboardApp() {
               <Button
                 type="submit"
                 size="sm"
-                variant="brand"
+                variant="default"
+                className="h-10 gap-2 rounded-lg bg-[#3ecf8e] px-4 py-2 text-sm font-semibold text-[#0a0a0a] hover:bg-[#5af0a8]"
                 disabled={submitting || !authReady}
               >
                 <PlusCircle className="h-4 w-4" aria-hidden="true" />
@@ -249,7 +250,8 @@ export function CreateDashboardApp() {
                 asChild
                 type="button"
                 size="sm"
-                variant="brandOutline"
+                variant="secondary"
+                className="h-10 rounded-lg border border-border bg-transparent px-4 py-2 text-sm text-foreground hover:bg-muted"
               >
                 <Link href="/dashboard">
                   Back to Dashboards

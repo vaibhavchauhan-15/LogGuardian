@@ -38,27 +38,27 @@ function ErrorTrendChartBase({ trend }: ErrorTrendChartProps) {
               <stop offset="100%" stopColor="#ff4d4f" stopOpacity={0.03} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#242424" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
           <XAxis
             dataKey="day"
-            tick={{ fill: "#555", fontSize: 11, fontFamily: "IBM Plex Mono" }}
-            axisLine={{ stroke: "#2e2e2e" }}
+            tick={{ fill: "var(--muted-foreground)", fontSize: 11, fontFamily: "IBM Plex Mono" }}
+            axisLine={{ stroke: "var(--border)" }}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: "#555", fontSize: 11, fontFamily: "IBM Plex Mono" }}
+            tick={{ fill: "var(--muted-foreground)", fontSize: 11, fontFamily: "IBM Plex Mono" }}
             axisLine={false}
             tickLine={false}
             width={32}
           />
           <Tooltip
             contentStyle={{
-              background: "#141414",
-              border: "1px solid #2e2e2e",
+              background: "var(--card)",
+              border: "1px solid var(--border)",
               borderRadius: "8px",
               fontFamily: "IBM Plex Mono",
               fontSize: "12px",
-              color: "#b4b4b4",
+              color: "var(--text-secondary)",
               boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
             }}
             cursor={{ fill: "rgba(255,255,255,0.03)" }}

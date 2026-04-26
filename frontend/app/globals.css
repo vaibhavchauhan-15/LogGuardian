@@ -94,9 +94,16 @@
 @layer base {
   * { border-color: var(--border); }
   
-  html { scroll-behavior: smooth; }
+  html {
+    min-height: 100%;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
   
   body {
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
     background-color: var(--background);
     color: var(--text-primary);
     font-family: var(--font-sans);
