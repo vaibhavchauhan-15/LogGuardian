@@ -1,0 +1,195 @@
+timestamp,level,message,service
+2024-01-15 10:00:01,INFO,User login successful user_id=u-1029,auth-service
+2024-01-15 10:00:05,ERROR,Database connection timeout after 30s retries=3,db-service
+2024-01-15 10:00:07,CRITICAL,Memory usage exceeded 95% threshold current=97.2%,api-gateway
+2024-01-15 10:00:09,INFO,Health check passed latency=4ms,health-check
+2024-01-15 10:00:12,INFO,Cache hit ratio=0.94 keys=18200,cache-service
+2024-01-15 10:00:14,WARN,Slow query detected duration=2340ms table=orders,db-service
+2024-01-15 10:00:16,INFO,Payment processed order_id=ord-8821 amount=299.99,payment-service
+2024-01-15 10:00:18,INFO,Email notification sent to user@example.com,notification-service
+2024-01-15 10:00:20,ERROR,Connection refused to Redis host=redis-01 port=6379,cache-service
+2024-01-15 10:00:22,INFO,API request GET /api/v1/products 200 latency=12ms,api-gateway
+2024-01-15 10:00:24,CRITICAL,Out of memory - OOM killer invoked process=worker-7,api-gateway
+2024-01-15 10:00:26,INFO,User registration completed email=new@example.com,auth-service
+2024-01-15 10:00:28,WARN,Rate limit threshold 80% reached client_ip=203.0.113.42,api-gateway
+2024-01-15 10:00:30,INFO,Scheduled job completed task=cleanup_old_sessions duration=340ms,scheduler
+2024-01-15 10:00:32,INFO,File upload completed size=4.2MB type=application/pdf,storage-service
+2024-01-15 10:00:34,ERROR,SSL certificate expired domain=api.internal expires=2024-01-10,api-gateway
+2024-01-15 10:00:36,INFO,Database query executed rows=250 duration=45ms,db-service
+2024-01-15 10:00:38,INFO,Background worker started task=index_rebuild,scheduler
+2024-01-15 10:00:40,WARN,High CPU utilization 85% process=node worker=2,api-gateway
+2024-01-15 10:00:42,INFO,Webhook delivered event=payment.success endpoint=https://client.example.com,notification-service
+2024-01-15 10:00:44,ERROR,Segmentation fault in worker process pid=9821,api-gateway
+2024-01-15 10:00:46,INFO,User session refreshed user_id=u-4412,auth-service
+2024-01-15 10:00:48,INFO,Product inventory updated sku=SKU-991 quantity=500,inventory-service
+2024-01-15 10:00:50,WARN,Disk usage at 88% mount=/var/data,storage-service
+2024-01-15 10:00:52,INFO,Metrics exported to Prometheus scrape_interval=15s,monitoring
+2024-01-15 10:00:54,ERROR,Failed to write to disk mount=/var/log errno=ENOSPC,storage-service
+2024-01-15 10:00:56,INFO,Cache primed for user_id=u-7701 keys=120,cache-service
+2024-01-15 10:00:58,INFO,Load balancer health check OK upstream=api-gateway-1,load-balancer
+2024-01-15 10:01:00,CRITICAL,Disk full on /var/data - writes failing mount=/var/data free=0B,storage-service
+2024-01-15 10:01:02,INFO,New dashboard created name=Production Monitoring user_id=u-1029,auth-service
+2024-01-15 10:01:04,INFO,API request POST /api/v1/orders 201 latency=88ms,api-gateway
+2024-01-15 10:01:06,WARN,Retry attempt 2/3 for outbound webhook event=order.created,notification-service
+2024-01-15 10:01:08,INFO,Query cache eviction keys=3200 reason=max_memory,cache-service
+2024-01-15 10:01:10,ERROR,Authentication token validation failed token_id=tok-x91,auth-service
+2024-01-15 10:01:12,INFO,Kafka consumer lag=0 topic=log-events partition=3,queue-service
+2024-01-15 10:01:14,WARN,Connection pool exhausted pool=db-write waiting=14,db-service
+2024-01-15 10:01:16,INFO,Model inference completed latency=28ms score=0.12,ml-service
+2024-01-15 10:01:18,INFO,Audit log entry created action=role_change user_id=u-8811,auth-service
+2024-01-15 10:01:20,ERROR,Timeout waiting for upstream response after 5000ms,api-gateway
+2024-01-15 10:01:22,INFO,Report generated report_id=rpt-4421 rows=15200,analytics-service
+2024-01-15 10:01:24,CRITICAL,Kernel panic - not syncing: VFS: Unable to mount root fs,api-gateway
+2024-01-15 10:01:26,INFO,User logout completed user_id=u-1029 session_duration=3600s,auth-service
+2024-01-15 10:01:28,INFO,S3 upload completed bucket=logguardian-data key=archive/2024-01.gz,storage-service
+2024-01-15 10:01:30,WARN,Elevated error rate 4.2% in last 5min service=payment-service,monitoring
+2024-01-15 10:01:32,INFO,Sync completed records=12000 source=postgres dest=elasticsearch,db-service
+2024-01-15 10:01:34,INFO,Feature flag evaluated flag=new_checkout user_id=u-5512 result=true,api-gateway
+2024-01-15 10:01:36,ERROR,Payment gateway timeout gateway=stripe attempt=1 order_id=ord-9932,payment-service
+2024-01-15 10:01:38,INFO,API request GET /api/v1/dashboard/metrics 200 latency=34ms,api-gateway
+2024-01-15 10:01:40,INFO,Scheduled backup completed size=2.1GB duration=420s,storage-service
+2024-01-15 10:01:42,WARN,JWT token expiring soon user_id=u-3310 expires_in=300s,auth-service
+2024-01-15 10:01:44,INFO,Anomaly detection model trained samples=850 accuracy=0.91,ml-service
+2024-01-15 10:01:46,ERROR,Database replication lag detected lag=12s replica=db-replica-02,db-service
+2024-01-15 10:01:48,INFO,Order shipped order_id=ord-8821 carrier=fedex tracking=FX9921,inventory-service
+2024-01-15 10:01:50,CRITICAL,Connection refused on critical dependency host=auth-service port=8080,api-gateway
+2024-01-15 10:01:52,INFO,API request DELETE /api/v1/sessions 204 latency=9ms,api-gateway
+2024-01-15 10:01:54,INFO,Log batch ingested count=50 dashboard_id=dash-001,ml-service
+2024-01-15 10:01:56,WARN,High memory usage 78% process=api-server worker=1,api-gateway
+2024-01-15 10:01:58,INFO,User password changed user_id=u-7700 triggered_by=user,auth-service
+2024-01-15 10:02:00,INFO,Prometheus metrics scraped targets=12 duration=220ms,monitoring
+2024-01-15 10:02:02,ERROR,Failed to send email SMTP error 550 recipient=invalid@domain.x,notification-service
+2024-01-15 10:02:04,INFO,Nginx reload completed workers=4 config=/etc/nginx/nginx.conf,load-balancer
+2024-01-15 10:02:06,INFO,Database vacuum completed table=logs duration=1800s freed=4.2GB,db-service
+2024-01-15 10:02:08,CRITICAL,Fatal exception in payment processor: NullPointerException,payment-service
+2024-01-15 10:02:10,INFO,CDN cache purged paths=120 region=us-east-1,storage-service
+2024-01-15 10:02:12,INFO,API request GET /api/v1/alerts 200 latency=21ms,api-gateway
+2024-01-15 10:02:14,WARN,Webhook retry exhausted event=order.created endpoint=https://fail.example.com,notification-service
+2024-01-15 10:02:16,INFO,Queue drained topic=email-notifications messages=450,queue-service
+2024-01-15 10:02:18,INFO,Auto-scaling triggered scale=+2 reason=cpu_high cluster=api,load-balancer
+2024-01-15 10:02:20,ERROR,Redis cluster node unresponsive node=redis-03 cluster=cache-cluster,cache-service
+2024-01-15 10:02:22,INFO,ML anomaly scoring completed batch_size=100 avg_score=0.18,ml-service
+2024-01-15 10:02:24,INFO,Grafana dashboard updated panel_id=anomaly-trend,monitoring
+2024-01-15 10:02:26,WARN,Slow response detected endpoint=GET /api/v1/reports latency=3200ms,api-gateway
+2024-01-15 10:02:28,INFO,User MFA configured user_id=u-4412 method=TOTP,auth-service
+2024-01-15 10:02:30,CRITICAL,Segfault in embedded Python interpreter pid=4421,ml-service
+2024-01-15 10:02:32,INFO,Event published topic=user.created partition=1 offset=9912,queue-service
+2024-01-15 10:02:34,INFO,Health check OK services=8 degraded=0,health-check
+2024-01-15 10:02:36,ERROR,gRPC deadline exceeded service=ml-service method=Predict deadline=2000ms,api-gateway
+2024-01-15 10:02:38,INFO,Certificate renewed domain=logguardian.app expires=2025-01-15,api-gateway
+2024-01-15 10:02:40,INFO,Bulk export completed format=CSV rows=25000 user_id=u-8811,analytics-service
+2024-01-15 10:02:42,WARN,Elasticsearch index size 89% threshold shard=logs-2024-01,db-service
+2024-01-15 10:02:44,INFO,API request POST /api/v1/logs/upload 200 latency=1240ms,api-gateway
+2024-01-15 10:02:46,INFO,Token rotation completed service=internal-api rotated=4,auth-service
+2024-01-15 10:02:48,ERROR,Uncaught exception TypeError: Cannot read property 'id' of undefined,api-gateway
+2024-01-15 10:02:50,INFO,Batch processing completed records=8000 errors=12 duration=3400ms,scheduler
+2024-01-15 10:02:52,CRITICAL,Critical security alert: brute force detected ip=192.168.1.200 attempts=500,auth-service
+2024-01-15 10:02:54,INFO,Container started image=logguardian/api:v2.1.0 container=api-gateway-3,load-balancer
+2024-01-15 10:02:56,INFO,User profile updated user_id=u-5512 fields=email,phone,auth-service
+2024-01-15 10:02:58,WARN,Queue backlog growing topic=order-processing backlog=4500,queue-service
+2024-01-15 10:03:00,INFO,API request GET /api/v1/logs 200 latency=56ms page=1 page_size=25,api-gateway
+2024-01-15 10:03:02,ERROR,Write-ahead log corruption detected segment=0000000100000001,db-service
+2024-01-15 10:03:04,INFO,Notification delivered user_id=u-1029 channel=push type=alert,notification-service
+2024-01-15 10:03:06,INFO,Ingress controller reloaded backend=api-gateway weight=70 backend=api-gateway-2 weight=30,load-balancer
+2024-01-15 10:03:08,WARN,Anomaly score spike detected avg_score=0.78 threshold=0.70,ml-service
+2024-01-15 10:03:10,INFO,Payment method saved user_id=u-3310 type=card brand=visa last4=4242,payment-service
+2024-01-15 10:03:12,CRITICAL,Out of file descriptors fd_limit=65536 open_fd=65490,api-gateway
+2024-01-15 10:03:14,INFO,Database index rebuilt table=log_events duration=480s rows=2M,db-service
+2024-01-15 10:03:16,INFO,Search index updated documents=45000 type=product,analytics-service
+2024-01-15 10:03:18,ERROR,Kafka consumer group rebalance failed group=log-consumers error=REBALANCE_IN_PROGRESS,queue-service
+2024-01-15 10:03:20,INFO,API request PATCH /api/v1/alerts/123/resolve 200 latency=18ms,api-gateway
+2024-01-15 10:03:22,INFO,Cron job executed task=daily_anomaly_report result=success,scheduler
+2024-01-15 10:03:24,WARN,Memory fragmentation ratio=1.8 threshold=1.5 process=redis,cache-service
+2024-01-15 10:03:26,INFO,Dashboard metrics refreshed dashboard_id=dash-001 records=1250,monitoring
+2024-01-15 10:03:28,ERROR,HTTP 503 Service Unavailable upstream=payment-service,load-balancer
+2024-01-15 10:03:30,INFO,User organization created org_id=org-552 name=Acme Corp,auth-service
+2024-01-15 10:03:32,INFO,Log session created session_id=sess-8811 logs=200 anomalies=22,ml-service
+2024-01-15 10:03:34,CRITICAL,Database failover initiated primary=db-primary-01 new_primary=db-replica-01,db-service
+2024-01-15 10:03:36,INFO,API request GET /api/v1/model/status 200 latency=8ms,api-gateway
+2024-01-15 10:03:38,INFO,Feature rollout updated flag=dark_mode rollout=50%,api-gateway
+2024-01-15 10:03:40,WARN,S3 put throttled bucket=logguardian-data retrying in 2s,storage-service
+2024-01-15 10:03:42,INFO,Canary deployment healthy version=v2.2.0 traffic=10% error_rate=0.1%,load-balancer
+2024-01-15 10:03:44,ERROR,Transaction rollback reason=deadlock table=orders transaction_id=txn-9921,db-service
+2024-01-15 10:03:46,INFO,WebSocket connection established user_id=u-4412 dashboard_id=dash-001,api-gateway
+2024-01-15 10:03:48,INFO,Anomaly model retrained trigger=new_upload samples=1050,ml-service
+2024-01-15 10:03:50,CRITICAL,Critical pod crash loop detected pod=ml-service-2 restarts=5,scheduler
+2024-01-15 10:03:52,INFO,Report scheduled report_id=rpt-9901 schedule=0 8 * * * recipient=team@example.com,analytics-service
+2024-01-15 10:03:54,INFO,API request POST /api/v1/dashboards 201 latency=220ms,api-gateway
+2024-01-15 10:03:56,WARN,Slow DNS resolution host=payment-gateway.external duration=800ms,payment-service
+2024-01-15 10:03:58,INFO,Cache warmed keys=8500 duration=1200ms strategy=prefetch,cache-service
+2024-01-15 10:04:00,ERROR,Permission denied: user u-0000 tried to access dashboard dash-0999,auth-service
+2024-01-15 10:04:02,INFO,Health check OK latency=3ms check=db_connectivity,health-check
+2024-01-15 10:04:04,INFO,Stripe webhook received event=invoice.paid amount=9900 customer=cus-8811,payment-service
+2024-01-15 10:04:06,WARN,Long GC pause detected duration=1800ms type=G1GC,api-gateway
+2024-01-15 10:04:08,INFO,User data export completed user_id=u-5512 format=JSON size=1.2MB,analytics-service
+2024-01-15 10:04:10,CRITICAL,Application crash: fatal signal 11 SIGSEGV at address 0x00000000,api-gateway
+2024-01-15 10:04:12,INFO,API request GET /api/v1/analytics/overview 200 latency=45ms,api-gateway
+2024-01-15 10:04:14,INFO,Worker process spawned pid=10022 type=batch-processor,scheduler
+2024-01-15 10:04:16,ERROR,Rate limit exceeded client_id=ext-api-client-9 limit=1000/min,api-gateway
+2024-01-15 10:04:18,INFO,Order fulfilled order_id=ord-9932 items=3 warehouse=WH-02,inventory-service
+2024-01-15 10:04:20,INFO,Audit trail exported entries=5000 format=NDJSON,analytics-service
+2024-01-15 10:04:22,WARN,Database connection count approaching limit current=480 max=500,db-service
+2024-01-15 10:04:24,INFO,New API key generated scope=read_only user_id=u-7700 key_id=key-4421,auth-service
+2024-01-15 10:04:26,ERROR,Failed to acquire distributed lock resource=model_training timeout=30s,ml-service
+2024-01-15 10:04:28,INFO,Realtime event broadcast event=log_ingested subscribers=12,api-gateway
+2024-01-15 10:04:30,INFO,Configuration reload completed version=config-v4.2.1 changes=3,api-gateway
+2024-01-15 10:04:32,CRITICAL,Memory leak detected heap_growth=500MB/h process=api-gateway,api-gateway
+2024-01-15 10:04:34,INFO,Backup verification completed snapshot=snap-2024-01-15 integrity=valid,storage-service
+2024-01-15 10:04:36,INFO,User preferences saved user_id=u-1029 theme=dark notifications=on,auth-service
+2024-01-15 10:04:38,WARN,API deprecation warning: /v1/logs/query will be removed in v3,api-gateway
+2024-01-15 10:04:40,INFO,Elasticsearch query completed index=logs-2024 hits=4200 took=120ms,analytics-service
+2024-01-15 10:04:42,ERROR,Panic: runtime error: index out of range [0] with length 0,ml-service
+2024-01-15 10:04:44,INFO,Queue consumer resumed topic=notifications lag=0,queue-service
+2024-01-15 10:04:46,INFO,Health degraded services=1 degraded=payment-service reason=high_latency,health-check
+2024-01-15 10:04:48,WARN,Network packet loss detected interface=eth0 loss=0.8%,load-balancer
+2024-01-15 10:04:50,INFO,A/B test allocation user_id=u-8811 experiment=checkout_flow variant=B,api-gateway
+2024-01-15 10:04:52,CRITICAL,Crash detected: SIGKILL sent to process pid=8801 reason=oom,api-gateway
+2024-01-15 10:04:54,INFO,Log analytics window closed period=1h normal=820 suspicious=45 critical=12,ml-service
+2024-01-15 10:04:56,INFO,Service mesh sidecar updated pod=api-gateway-1 proxy=envoy version=1.28,load-balancer
+2024-01-15 10:04:58,ERROR,gRPC status UNAVAILABLE: service mesh circuit breaker open,api-gateway
+2024-01-15 10:05:00,INFO,API request GET /api/v1/model/status 200 latency=5ms,api-gateway
+2024-01-15 10:05:02,INFO,Alert rule fired rule=high_anomaly_rate threshold=10% current=12.4%,monitoring
+2024-01-15 10:05:04,WARN,Kubernetes node memory pressure node=node-03 pressure=true,scheduler
+2024-01-15 10:05:06,INFO,Payment refund processed order_id=ord-7700 amount=49.99 reason=customer_request,payment-service
+2024-01-15 10:05:08,ERROR,TLS handshake failed peer=client-api cert_error=certificate_expired,api-gateway
+2024-01-15 10:05:10,INFO,Model evaluation completed f1=0.89 precision=0.91 recall=0.87,ml-service
+2024-01-15 10:05:12,INFO,Cache TTL update key_pattern=session:* new_ttl=3600s,cache-service
+2024-01-15 10:05:14,CRITICAL,Fraud detection alert: unusual transaction pattern user_id=u-0001 amount=9999.99,payment-service
+2024-01-15 10:05:16,INFO,API request GET /api/v1/dashboards 200 latency=33ms count=4,api-gateway
+2024-01-15 10:05:18,INFO,User invitation sent email=teammate@example.com role=viewer org_id=org-552,auth-service
+2024-01-15 10:05:20,WARN,Container restart count high container=db-service-1 restarts=3 in 1h,scheduler
+2024-01-15 10:05:22,INFO,Log retention policy applied deleted=15000 older_than=90d,storage-service
+2024-01-15 10:05:24,ERROR,Connection pool timeout waiting=30s pool=redis-primary,cache-service
+2024-01-15 10:05:26,INFO,Deployment completed version=v2.1.5 environment=production rollout=100%,load-balancer
+2024-01-15 10:05:28,INFO,Alert deduplication merged 3 alerts into alert_id=alt-1234 group=db_errors,monitoring
+2024-01-15 10:05:30,CRITICAL,Network partition detected between primary=us-east and replica=eu-west,db-service
+2024-01-15 10:05:32,INFO,API request POST /api/v1/logs/ingest 201 latency=180ms,api-gateway
+2024-01-15 10:05:34,INFO,Dashboard widget updated widget=error_trend dashboard_id=dash-001,monitoring
+2024-01-15 10:05:36,WARN,Response time p99=4500ms endpoint=GET /api/v1/reports SLA_breach=true,api-gateway
+2024-01-15 10:05:38,INFO,OAuth token issued client=web-app scope=read,write user_id=u-4412,auth-service
+2024-01-15 10:05:40,ERROR,Unhandled promise rejection Error: ECONNRESET socket hang up,api-gateway
+2024-01-15 10:05:42,INFO,Inventory sync completed products=3500 updated=120 duration=890ms,inventory-service
+2024-01-15 10:05:44,INFO,Healthcheck passed all systems operational,health-check
+2024-01-15 10:05:46,CRITICAL,System entropy exhausted - cryptographic operations failing,api-gateway
+2024-01-15 10:05:48,INFO,Log export completed format=gzip size=45MB lines=500000,storage-service
+2024-01-15 10:05:50,INFO,Kafka producer flush completed messages=4500 duration=120ms,queue-service
+2024-01-15 10:05:52,WARN,Anomaly spike detected window=5m events=8 severity=critical,ml-service
+2024-01-15 10:05:54,INFO,API request GET /api/v1/logs 200 latency=62ms total=1250,api-gateway
+2024-01-15 10:05:56,ERROR,Payment processor returned unexpected HTTP 500 gateway=paypal attempt=3,payment-service
+2024-01-15 10:05:58,INFO,Slack alert sent channel=#ops-alerts message=High anomaly rate detected,notification-service
+2024-01-15 10:06:00,INFO,Database connection pool resized min=10 max=100 current=45,db-service
+2024-01-15 10:06:02,WARN,Thread pool saturation detected pool=async-executor active=200 max=200,api-gateway
+2024-01-15 10:06:04,INFO,GDPR deletion completed user_id=u-9900 records_deleted=120 service_count=4,analytics-service
+2024-01-15 10:06:06,CRITICAL,Stack overflow detected thread=http-worker-12 depth=10000,api-gateway
+2024-01-15 10:06:08,INFO,Realtime stream connected user_id=u-1029 dashboard_id=dash-001,api-gateway
+2024-01-15 10:06:10,INFO,Session cleanup completed expired=3400 duration=220ms,scheduler
+2024-01-15 10:06:12,ERROR,Failed to parse log entry format=CSV row=1450 error=missing_required_field,ml-service
+2024-01-15 10:06:14,INFO,API gateway upstream health check passed upstream=api-v2 latency=8ms,load-balancer
+2024-01-15 10:06:16,INFO,New plan subscription user_id=u-5512 plan=pro billing=monthly,payment-service
+2024-01-15 10:06:18,WARN,Disk I/O wait high iowait=25% mount=/var/data,storage-service
+2024-01-15 10:06:20,INFO,Model inference batch completed size=200 avg_latency=32ms,ml-service
+2024-01-15 10:06:22,ERROR,Worker process killed signal=SIGTERM reason=graceful_shutdown_timeout pid=8890,scheduler
+2024-01-15 10:06:24,INFO,API request GET /api/v1/alerts 200 latency=29ms page=1,api-gateway
+2024-01-15 10:06:26,INFO,SSH key rotated host=bastion-01 user=deploy,auth-service
+2024-01-15 10:06:28,CRITICAL,Critical process watchdog: restarting crashed process api-gateway-worker,api-gateway
+2024-01-15 10:06:30,INFO,Job queue drained queue=email_jobs duration=800ms jobs=220,queue-service
