@@ -5,6 +5,7 @@ import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import { ExternalLink, Shield, Star } from "lucide-react";
 import { useState } from "react";
 
+import { GetStartedButton } from "@/components/auth/get-started-button";
 import { Button } from "@/components/ui/button";
 
 const navLinks = [
@@ -64,16 +65,15 @@ export function Navbar() {
             </a>
           </Button>
 
-          <Button
+          <GetStartedButton
             size="sm"
             className="h-9 bg-brand px-4 text-xs font-semibold text-black hover:bg-brand/90"
-            asChild
           >
-            <Link href="/signin" className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1.5">
               <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
               Get Started
-            </Link>
-          </Button>
+            </span>
+          </GetStartedButton>
         </div>
       </div>
     </motion.nav>

@@ -7,6 +7,7 @@ import { ArrowRight, LayoutDashboard, PlusCircle, RefreshCcw } from "lucide-reac
 
 import { type DashboardSummary, listDashboards } from "@/lib/api";
 import { resolveAndStoreUserContext } from "@/lib/user-context";
+import { AppHeader } from "@/components/app-header";
 
 function dashboardStatusChip(status: DashboardSummary["status"]) {
   if (status === "critical") {
@@ -77,19 +78,7 @@ export function DashboardProjectsApp() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      {/* ── Top Nav (logo only) ── */}
-      <header className="sticky top-0 z-50 h-12 border-b border-[var(--border)] bg-[var(--card)]">
-        <div className="flex h-full items-center px-5 sm:px-8 lg:px-10">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-[5px] bg-[#3ecf8e]" aria-hidden="true">
-              <span className="block h-2.5 w-2.5 rounded-[2px] bg-[#0a0a0a]" />
-            </span>
-            <span className="font-['IBM_Plex_Mono'] text-xs font-semibold tracking-wide text-[var(--foreground)]">
-              LogGuardian
-            </span>
-          </Link>
-        </div>
-      </header>
+      <AppHeader />
 
       <main>
         {/* ── Hero Band ── */}

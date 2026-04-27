@@ -1,10 +1,10 @@
 import { AnomalyShowcase } from "@/components/landing/anomaly-showcase";
+import { AppHeader } from "@/components/app-header";
 import { CtaSection } from "@/components/landing/cta-section";
 import { FeaturesGrid } from "@/components/landing/features-grid";
 import { Footer } from "@/components/landing/footer";
 import { Hero } from "@/components/landing/hero";
 import { HowItWorks } from "@/components/landing/how-it-works";
-import { Navbar } from "@/components/landing/navbar";
 import { StatsBar } from "@/components/landing/stats-bar";
 import { TechStack } from "@/components/landing/tech-stack";
 
@@ -22,7 +22,7 @@ const SectionDivider = () => (
 export default function Home() {
   return (
     <>
-      <Navbar />
+      <AppHeader showProfile={false} />
       <main className="relative">
         <div
           aria-hidden="true"

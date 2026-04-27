@@ -95,7 +95,17 @@ export function ThemeProvider({
 
     try {
       const storedTheme = localStorage.getItem(storageKey);
-      return isValidTheme(storedTheme) ? storedTheme : defaultTheme;
+      if (isValidTheme(storedTheme)) {
+        return storedTheme;
+      }
+
+      const cookieTheme = document.cookie
+        .split(";")
+        .map((item) => item.trim())
+        .find((item) => item.startsWith(`${storageKey}=`))
+        ?.split("=")[1];
+      const decodedCookie = cookieTheme ? decodeURIComponent(cookieTheme) : null;
+      return isValidTheme(decodedCookie) ? decodedCookie : defaultTheme;
     } catch {
       return defaultTheme;
     }
@@ -132,12 +142,18 @@ export function ThemeProvider({
     };
 
     updateTheme();
+
+    try {
+      document.cookie = `${storageKey}=${encodeURIComponent(theme)}; path=/; max-age=31536000; samesite=lax`;
+    } catch {
+      // Ignore cookie write failures.
+    }
     media.addEventListener("change", updateTheme);
 
     return () => {
       media.removeEventListener("change", updateTheme);
     };
-  }, [attribute, disableTransitionOnChange, enableSystem, forcedTheme, theme]);
+  }, [attribute, disableTransitionOnChange, enableSystem, forcedTheme, storageKey, theme]);
 
   const value = useMemo(
     () => ({

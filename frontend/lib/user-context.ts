@@ -97,10 +97,12 @@ async function fetchSupabaseUser(
   accessToken?: string
 ): Promise<SupabaseUserResponse | null> {
   const headers: HeadersInit = {};
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (anonKey) {
-    headers.apikey = anonKey;
+  const anonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!anonKey) {
+    return null;
   }
+  headers.apikey = anonKey;
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`;
   }

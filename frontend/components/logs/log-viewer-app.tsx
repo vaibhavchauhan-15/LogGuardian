@@ -9,7 +9,6 @@ import {
   createRealtimeSocket,
   getLogs,
 } from "@/lib/api";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 const levelOptions = ["", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"];
@@ -104,12 +103,9 @@ export function LogViewerApp() {
     <div className="lg-shell">
       <main className="lg-section pt-10">
         <section className="bg-card border border-border shadow-none rounded-[12px] p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight">Logs</h1>
-              <p className="lg-subtle mt-2 text-sm">Deep filtering + drill-down for incident triage</p>
-            </div>
-            <ThemeToggle />
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Logs</h1>
+            <p className="lg-subtle mt-2 text-sm">Deep filtering + drill-down for incident triage</p>
           </div>
         </section>
 

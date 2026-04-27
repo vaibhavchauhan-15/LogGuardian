@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 
 import { SmoothScroll } from "@/components/providers/smooth-scroll";
@@ -61,22 +62,28 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const storedTheme = cookieStore.get("lg-theme")?.value;
+  const initialTheme = storedTheme === "light" ? "light" : "dark";
+
   return (
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${spaceGrotesk.variable} ${ibmPlexMono.variable}`}
+      className={`${spaceGrotesk.variable} ${ibmPlexMono.variable} ${initialTheme}`}
     >
       <body className="antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
           enableSystem={false}
+          disableTransitionOnChange
+          storageKey="lg-theme"
         >
           <SmoothScroll>{children}</SmoothScroll>
         </ThemeProvider>

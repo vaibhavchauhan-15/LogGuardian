@@ -209,10 +209,16 @@ export function SignInExperience() {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const searchParams = useSearchParams();
-  const oauthErrorMessage = searchParams.get("error_description") ?? searchParams.get("error");
+  const rawOauthError = searchParams.get("error_description") ?? searchParams.get("error");
 
-  const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "") ?? "";
-  const authEnabled  = Boolean(supabaseUrl);
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "") ?? "";
+  const supabaseKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+  const authEnabled = Boolean(supabaseUrl && supabaseKey);
+
+  const oauthErrorMessage = rawOauthError?.includes("No API key found")
+    ? "Supabase auth is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY."
+    : rawOauthError;
 
   const handleGoogleSignIn = async () => {
     if (!authEnabled || isSigningIn) return;
@@ -234,7 +240,7 @@ export function SignInExperience() {
   };
 
   return (
-    <div className="relative min-h-screen bg-background overflow-auto flex items-center justify-center px-4 py-8 md:py-10">
+    <div className="relative min-h-[calc(100dvh-3rem)] bg-background overflow-auto flex items-center justify-center px-4 py-8 md:py-10">
 
       {/* Ambient blobs */}
       <motion.div aria-hidden className="pointer-events-none absolute -left-32 top-[-20%] h-[55dvh] w-[60vw] rounded-full blur-3xl"

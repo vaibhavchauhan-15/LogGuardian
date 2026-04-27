@@ -20,6 +20,19 @@ export async function GET(request: Request) {
   const errorDescription = searchParams.get("error_description");
   const next = searchParams.get("next") ?? "/dashboard";
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    const url = new URL(`${origin}/signin`);
+    url.searchParams.set(
+      "error",
+      "Supabase auth is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY."
+    );
+    return NextResponse.redirect(url);
+  }
+
   // Surface any OAuth errors back to the sign-in page.
   if (error) {
     const url = new URL(`${origin}/signin`);

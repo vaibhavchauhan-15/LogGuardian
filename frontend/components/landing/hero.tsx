@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, ExternalLink } from "lucide-react";
 
+import { GetStartedButton } from "@/components/auth/get-started-button";
 import { Button } from "@/components/ui/button";
 import { TerminalDemo } from "@/components/landing/terminal-demo";
 
@@ -83,12 +83,12 @@ export function Hero() {
           transition={{ duration: 0.6, delay: 0.3, ease: easeOut }}
           className="mt-9 flex flex-wrap items-center justify-center gap-3"
         >
-          <Button className="h-11 bg-brand px-6 text-sm font-semibold text-black hover:bg-brand/90" asChild>
-            <Link href="/signin" className="inline-flex items-center gap-2">
+          <GetStartedButton className="h-11 bg-brand px-6 text-sm font-semibold text-black hover:bg-brand/90">
+            <span className="inline-flex items-center gap-2">
               Deploy in 5 minutes
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-          </Button>
+            </span>
+          </GetStartedButton>
 
           <Button variant="ghost" className="h-11 px-5 text-sm" asChild>
             <a href="https://github.com" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2">

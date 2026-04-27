@@ -1,8 +1,7 @@
 "use client";
 
-import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -11,7 +10,6 @@ import {
   CheckCircle2,
   Clock3,
   FileUp,
-  LogOut,
   RefreshCcw,
   Server,
   Sparkles,
@@ -19,9 +17,6 @@ import {
 } from "lucide-react";
 
 import {
-  ACCESS_TOKEN_STORAGE_KEY,
-  USER_EMAIL_STORAGE_KEY,
-  USER_ID_STORAGE_KEY,
   type AnalyticsOverview,
   type Classification,
   type LogRecord,
@@ -35,7 +30,6 @@ import {
   trainModel,
   uploadLogFile,
 } from "@/lib/api";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { ActiveAnomalyTracker } from "@/components/ui/live-sales-dashboard";
 import { AnomalyPulseCard } from "@/components/ui/animated-dashboard-card";
@@ -114,11 +108,6 @@ function parseRealtimeLog(payload: unknown): LogRecord | null {
   };
 }
 
-function getFallbackInitial(name: string, email?: string | null) {
-  const source = name.trim() || (email ?? "").trim() || "U";
-  return source.charAt(0).toUpperCase();
-}
-
 export function DashboardApp() {
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [modelStatus, setModelStatus] = useState<ModelStatus | null>(null);
@@ -146,12 +135,6 @@ export function DashboardApp() {
   const [isUploading, setIsUploading] = useState(false);
   const [isTraining, setIsTraining] = useState(false);
   const [feedback, setFeedback] = useState<string>("");
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [profileName, setProfileName] = useState("User");
-  const [profileEmail, setProfileEmail] = useState<string | null>(null);
-  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
-
-  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / pageSize)), [pageSize, total]);
 
@@ -256,153 +239,6 @@ export function DashboardApp() {
     };
   }, [pageSize]);
 
-  useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
-    if (!supabaseUrl) {
-      return;
-    }
-
-    const hashValue = window.location.hash.startsWith("#")
-      ? window.location.hash.slice(1)
-      : window.location.hash;
-    const hashParams = new URLSearchParams(hashValue);
-    const tokenFromHash = hashParams.get("access_token");
-
-    if (tokenFromHash) {
-      window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, tokenFromHash);
-      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
-    }
-
-    const accessToken = tokenFromHash ?? window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
-    if (!accessToken) {
-      return;
-    }
-
-    let isCancelled = false;
-
-    async function fetchUserProfile() {
-      try {
-        const headers: HeadersInit = {
-          Authorization: `Bearer ${accessToken}`,
-        };
-
-        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        if (anonKey) {
-          headers.apikey = anonKey;
-        }
-
-        const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
-          method: "GET",
-          headers,
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          return;
-        }
-
-        const user = (await response.json()) as {
-          id?: string;
-          email?: string;
-          user_metadata?: {
-            full_name?: string;
-            name?: string;
-            avatar_url?: string;
-            picture?: string;
-          };
-          identities?: Array<{
-            identity_data?: {
-              avatar_url?: string;
-              picture?: string;
-              full_name?: string;
-              name?: string;
-            };
-          }>;
-        };
-
-        if (isCancelled) {
-          return;
-        }
-
-        const identityData = user.identities?.[0]?.identity_data;
-        const userId = user.id?.trim() || null;
-        const email = user.email?.trim() || null;
-        const name =
-          user.user_metadata?.full_name?.trim() ||
-          user.user_metadata?.name?.trim() ||
-          identityData?.full_name?.trim() ||
-          identityData?.name?.trim() ||
-          (email ? email.split("@")[0] : "User");
-        const avatar =
-          user.user_metadata?.avatar_url ||
-          user.user_metadata?.picture ||
-          identityData?.avatar_url ||
-          identityData?.picture ||
-          null;
-
-        setProfileName(name || "User");
-        setProfileEmail(email);
-        setProfileAvatarUrl(avatar);
-
-        if (userId) {
-          window.localStorage.setItem(USER_ID_STORAGE_KEY, userId);
-        }
-        if (email) {
-          window.localStorage.setItem(USER_EMAIL_STORAGE_KEY, email);
-        }
-      } catch {
-        return;
-      }
-    }
-
-    void fetchUserProfile();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    function handleDocumentPointerDown(event: MouseEvent) {
-      if (!profileMenuRef.current?.contains(event.target as Node)) {
-        setProfileMenuOpen(false);
-      }
-    }
-
-    function handleDocumentKeydown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setProfileMenuOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleDocumentPointerDown);
-    document.addEventListener("keydown", handleDocumentKeydown);
-
-    return () => {
-      document.removeEventListener("mousedown", handleDocumentPointerDown);
-      document.removeEventListener("keydown", handleDocumentKeydown);
-    };
-  }, []);
-
-  function handleLogout() {
-    setProfileMenuOpen(false);
-    window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
-    window.localStorage.removeItem(USER_ID_STORAGE_KEY);
-    window.localStorage.removeItem(USER_EMAIL_STORAGE_KEY);
-
-    const redirectPath = "/signin";
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
-
-    if (!supabaseUrl) {
-      window.location.assign(redirectPath);
-      return;
-    }
-
-    const redirectTo = `${window.location.origin}${redirectPath}`;
-    const logoutUrl = `${supabaseUrl}/auth/v1/logout?redirect_to=${encodeURIComponent(redirectTo)}`;
-    window.location.assign(logoutUrl);
-  }
-
   async function handleIngest(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!form.message.trim()) {
@@ -478,73 +314,9 @@ export function DashboardApp() {
               <p className="lg-subtle mt-2 text-sm">Hybrid ML + realtime incident intelligence</p>
             </div>
 
-            <div ref={profileMenuRef} className="relative">
-              <button
-                type="button"
-                className="lg-focus-ring inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-(--border) bg-card"
-                aria-haspopup="menu"
-                aria-expanded={profileMenuOpen}
-                aria-label="Open profile menu"
-                onClick={() => setProfileMenuOpen((prev) => !prev)}
-              >
-                {profileAvatarUrl ? (
-                  <img
-                    src={profileAvatarUrl}
-                    alt={`${profileName} profile`}
-                    className="h-full w-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <span className="text-sm font-semibold uppercase text-foreground">
-                    {getFallbackInitial(profileName, profileEmail)}
-                  </span>
-                )}
-              </button>
-
-              {profileMenuOpen ? (
-                <div
-                  role="menu"
-                  className="bg-card border border-border shadow-none absolute right-0 top-[calc(100%+0.65rem)] z-50 w-64 rounded-2xl p-2"
-                >
-                  <div className="rounded-xl px-3 py-2">
-                    <p className="text-sm font-semibold leading-tight">{profileName}</p>
-                    {profileEmail ? <p className="lg-subtle mt-1 text-xs">{profileEmail}</p> : null}
-                  </div>
-
-                  <Link
-                    href="/alerts"
-                    className="lg-focus-ring mt-1 flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors hover:bg-(--lg-accent-soft)"
-                    role="menuitem"
-                    onClick={() => setProfileMenuOpen(false)}
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <Bell className="h-4 w-4" aria-hidden="true" />
-                      Notifications
-                    </span>
-                    <span className="rounded-full border border-(--border) px-2 py-0.5 text-xs lg-subtle">
-                      {pendingAlerts}
-                    </span>
-                  </Link>
-
-                  <div className="mt-1 flex items-center justify-between rounded-xl px-3 py-2 text-sm">
-                    <span className="inline-flex items-center gap-2">
-                      <Sparkles className="h-4 w-4" aria-hidden="true" />
-                      Theme
-                    </span>
-                    <ThemeToggle />
-                  </div>
-
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="lg-focus-ring mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-300"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="h-4 w-4" aria-hidden="true" />
-                    Logout
-                  </button>
-                </div>
-              ) : null}
+            <div className="inline-flex items-center gap-2 rounded-full border border-(--border) px-3 py-1.5 text-sm lg-subtle">
+              <Bell className="h-4 w-4 text-(--lg-accent-strong)" aria-hidden="true" />
+              Pending alerts: {pendingAlerts}
             </div>
           </div>
         </section>

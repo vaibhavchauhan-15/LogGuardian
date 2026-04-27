@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { AppHeader } from "@/components/app-header";
 import { LogViewerApp } from "@/components/logs/log-viewer-app";
 
 export const metadata: Metadata = {
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function LogsPage() {
-  return <LogViewerApp />;
+  return (
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+      <AppHeader />
+      <LogViewerApp />
+    </div>
+  );
 }

@@ -7,10 +7,11 @@ const SUPABASE_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 /** Routes that require authentication. */
-const PROTECTED_PREFIXES = ["/dashboard", "/logs", "/alerts", "/create-dashboard"];
+const PROTECTED_PREFIXES = ["/dashboard", "/workspace", "/logs", "/alerts", "/create-dashboard"];
 
 /** Routes that should redirect to /dashboard if the user is already signed in. */
-const AUTH_ROUTES = ["/signin"];
+const AUTH_ROUTES = ["/signin", "/login"];
+const LOGIN_PATH = "/login";
 
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
   let response = NextResponse.next({ request });
@@ -52,9 +53,9 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
 
   if (isProtected && !user) {
-    // Redirect unauthenticated users to the sign-in page.
+    // Redirect unauthenticated users to the log-in page.
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/signin";
+    redirectUrl.pathname = LOGIN_PATH;
     // Preserve the intended destination so we can redirect back after sign-in.
     redirectUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(redirectUrl);

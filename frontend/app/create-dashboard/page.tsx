@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { AppHeader } from "@/components/app-header";
 import { CreateDashboardApp } from "@/components/dashboard/create-dashboard-app";
 
 export const metadata: Metadata = {
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function CreateDashboardPage() {
-  return <CreateDashboardApp />;
+  return (
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+      <AppHeader />
+      <CreateDashboardApp />
+    </div>
+  );
 }

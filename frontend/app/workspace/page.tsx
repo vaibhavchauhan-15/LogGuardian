@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 
 import { AppHeader } from "@/components/app-header";
-import { AlertsPanelApp } from "@/components/alerts/alerts-panel-app";
+import { DashboardApp } from "@/components/dashboard/dashboard-app";
 
 export const metadata: Metadata = {
-  title: "Alerts",
-  description: "Deduplicated incident alerts with priority and status workflows.",
+  title: "Workspace",
+  description: "Operational workspace for realtime monitoring and ingestion controls.",
 };
 
-export default function AlertsPage() {
+export default function WorkspacePage() {
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <AppHeader />
-      <AlertsPanelApp />
+      <DashboardApp />
     </div>
   );
 }
