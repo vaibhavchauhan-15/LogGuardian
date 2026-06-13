@@ -1,0 +1,38 @@
+{
+  "buildCommand": "echo 'Build complete'",
+  "installCommand": "pip install -r requirements.txt",
+  "framework": "python",
+  "pythonVersion": "3.11",
+  "env": [
+    {
+      "key": "ENVIRONMENT",
+      "description": "Deployment environment",
+      "value": "production"
+    },
+    {
+      "key": "FRONTEND_ORIGIN",
+      "description": "CORS allowed origins (comma-separated)",
+      "value": ""
+    },
+    {
+      "key": "SUPABASE_URL",
+      "description": "Supabase project URL",
+      "value": ""
+    },
+    {
+      "key": "SUPABASE_ROLE_KEY",
+      "description": "Supabase service role key",
+      "value": ""
+    },
+    {
+      "key": "SUPABASE_KEY",
+      "description": "Supabase API key (fallback)",
+      "value": ""
+    },
+    {
+      "key": "REDIS_URL",
+      "description": "Redis connection URL",
+      "value": ""
+    }
+  ]
+}

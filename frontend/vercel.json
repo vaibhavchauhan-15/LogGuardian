@@ -1,0 +1,46 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "nodeVersion": "22.x",
+  "env": [
+    {
+      "key": "NEXT_PUBLIC_SUPABASE_URL",
+      "description": "Supabase project URL",
+      "value": ""
+    },
+    {
+      "key": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "description": "Supabase anonymous key for client-side auth",
+      "value": ""
+    },
+    {
+      "key": "NEXT_PUBLIC_SITE_URL",
+      "description": "Frontend deployment URL (auto-populated by Vercel)",
+      "value": ""
+    },
+    {
+      "key": "NEXT_PUBLIC_API_URL",
+      "description": "Backend API URL (e.g., https://logguardian-api.railway.app or custom domain)",
+      "value": ""
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/health",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/docs",
+      "destination": "https://vercel.com"
+    }
+  ]
+}
