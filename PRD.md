@@ -305,7 +305,7 @@ Email → SMTP (Gmail free)
 Telegram Bot (BEST free alert system 🔥)
 ☁️ Deployment (FREE)
 Frontend → Vercel
-Backend → Railway / Render (free tier)
+Backend → Render (free tier)
 DB → Supabase free
 🧠 3. HIGH-ACCURACY PIPELINE (IMPORTANT)
 

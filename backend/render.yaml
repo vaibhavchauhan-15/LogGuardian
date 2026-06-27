@@ -1,32 +1,30 @@
----
 services:
   - type: web
     name: logguardian-api
     runtime: python
-    pythonVersion: 3.11
+    plan: free
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
       - key: ENVIRONMENT
         value: production
+      # Disabled: sentence-transformers/torch are excluded from requirements.txt
+      # to fit the free tier. The app falls back to a hashing vectorizer.
+      - key: ENABLE_SEMANTIC_EMBEDDINGS
+        value: "false"
+      # Comma-separated allowed CORS origins (your Vercel frontend URL).
       - key: FRONTEND_ORIGIN
         sync: false
-        value: ""
       - key: SUPABASE_URL
         sync: false
-        value: ""
-      - key: SUPABASE_ROLE_KEY
-        sync: false
-        value: ""
       - key: SUPABASE_KEY
         sync: false
-        value: ""
+      - key: SUPABASE_ROLE_KEY
+        sync: false
+      # Optional: managed Redis/Key Value connection string for alert dedupe.
       - key: REDIS_URL
         sync: false
-        value: ""
-
-databases:
-  - name: redis
-    plan: free
-    ipAllowList: []
