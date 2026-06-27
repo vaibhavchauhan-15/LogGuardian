@@ -4,13 +4,8 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import {
-  ACCESS_TOKEN_STORAGE_KEY,
-  ACTIVE_DASHBOARD_STORAGE_KEY,
-  USER_EMAIL_STORAGE_KEY,
-  USER_ID_STORAGE_KEY,
-} from "@/lib/api";
-import { createClient } from "@/lib/supabase/client";
+import { USER_EMAIL_STORAGE_KEY } from "@/lib/api";
+import { signOutFirebase } from "@/lib/firebase/auth";
 import { resolveAndStoreUserContext } from "@/lib/user-context";
 import { GetStartedButton } from "@/components/auth/get-started-button";
 import { ProfileDropdown } from "@/components/profile-dropdown";
@@ -56,28 +51,10 @@ export function AppHeader({ showProfile = true }: AppHeaderProps) {
   }, [showProfile]);
 
   const handleLogout = useCallback(() => {
-    const redirectPath = "/signin";
-
-    window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
-    window.localStorage.removeItem(USER_ID_STORAGE_KEY);
-    window.localStorage.removeItem(USER_EMAIL_STORAGE_KEY);
-    window.localStorage.removeItem(ACTIVE_DASHBOARD_STORAGE_KEY);
-
     void (async () => {
-      try {
-        const hasSupabaseConfig = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-        );
-
-        if (hasSupabaseConfig) {
-          const supabase = createClient();
-          await supabase.auth.signOut();
-        }
-      } catch {
-        // Always continue to signin even if remote logout request fails.
-      }
-
-      window.location.assign(redirectPath);
+      // signOutFirebase clears all locally-cached identity as well.
+      await signOutFirebase();
+      window.location.assign("/signin");
     })();
   }, []);
 

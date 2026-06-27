@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -278,18 +279,78 @@ class AnomalyService:
         except Exception:
             return None
 
-    def _heuristic_component(self, message: str) -> float:
-        lower = message.lower()
-        critical_terms = ["panic", "fatal", "out of memory", "segfault", "crash", "timeout"]
-        suspicious_terms = ["error", "retry", "exception", "denied", "slow", "throttle"]
+    # ── Security rule engine ────────────────────────────────────────────────
+    # High-confidence patterns that should always be flagged regardless of what
+    # the unsupervised model has (or hasn't) learned. Returns (score, reason).
+    _SQLI_RE = re.compile(
+        r"(union\s+select|or\s+1\s*=\s*1|'\s*or\s*'?\d|--\s|/\*|;\s*drop\s+table"
+        r"|xp_cmdshell|information_schema|sleep\s*\(|benchmark\s*\(|waitfor\s+delay)",
+        re.IGNORECASE,
+    )
+    _XSS_RE = re.compile(r"(<script|onerror\s*=|javascript:|<img[^>]+src\s*=)", re.IGNORECASE)
+    _TRAVERSAL_RE = re.compile(r"(\.\./\.\.|/etc/passwd|\.\.\\|%2e%2e%2f)", re.IGNORECASE)
+    _HTTP_STATUS_RE = re.compile(r"\b(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\b[^\n]*?\b([1-5]\d{2})\b", re.IGNORECASE)
 
-        if any(term in lower for term in critical_terms):
-            return 0.9
-        if any(term in lower for term in suspicious_terms):
-            return 0.62
-        return 0.12
+    _CRITICAL_PHRASES = (
+        "impossible travel", "sql injection", "brute force", "traffic spike",
+        "unauthorized admin", "multiple failed login", "account takeover",
+        "data exfiltration", "privilege escalation", "ddos", "ransomware",
+        "malware", "security breach", "intrusion detected", "fraud",
+        "panic", "fatal", "out of memory", "segfault", "kernel panic",
+    )
+    _SUSPICIOUS_PHRASES = (
+        "unauthorized", "forbidden", "access denied", "permission denied",
+        "failed login", "login failed", "invalid credentials", "invalid token",
+        "rate limit", "throttle", "blocked", "suspicious", "exception",
+        "timeout", "timed out", "retry", "deadlock", "rejected", "anomaly",
+    )
+
+    def _rule_score(self, message: str) -> tuple[float, str]:
+        """Deterministic security heuristics. High recall on common attacks."""
+        lower = message.lower()
+
+        # ── Critical: attacks and fatal conditions ──
+        if self._SQLI_RE.search(message):
+            return 0.96, "SQL injection pattern detected"
+        if self._XSS_RE.search(message):
+            return 0.95, "Cross-site scripting pattern detected"
+        if self._TRAVERSAL_RE.search(message):
+            return 0.95, "Path traversal pattern detected"
+        for phrase in self._CRITICAL_PHRASES:
+            if phrase in lower:
+                return 0.94, f"High-risk indicator: '{phrase}'"
+        # An explicit ALERT level is, by definition, a critical event.
+        if re.search(r"\bALERT\b", message):
+            return 0.93, "Explicit ALERT-level event"
+
+        # ── HTTP status codes ──
+        status_match = self._HTTP_STATUS_RE.search(message)
+        status = int(status_match.group(2)) if status_match else None
+        if status is not None:
+            if status >= 500:
+                return 0.85, f"Server error (HTTP {status})"
+            if status in (401, 403):
+                return 0.66, f"Auth failure (HTTP {status})"
+            if status in (400, 405, 408, 409, 429):
+                return 0.6, f"Client error (HTTP {status})"
+
+        # ── Suspicious keywords / levels ──
+        for phrase in self._SUSPICIOUS_PHRASES:
+            if phrase in lower:
+                return 0.62, f"Suspicious indicator: '{phrase}'"
+        if re.search(r"\b(ERROR|CRITICAL)\b", message):
+            return 0.6, "ERROR/CRITICAL level"
+        if re.search(r"\bWARN(?:ING)?\b", message):
+            return 0.5, "WARN level"
+
+        return 0.06, "No anomaly indicators detected"
+
+    def _heuristic_component(self, message: str) -> float:
+        return self._rule_score(message)[0]
 
     def score(self, message: str) -> ModelScore:
+        rule_value, rule_reason = self._rule_score(message)
+
         if self.isolation_model is None:
             return self._heuristic_score(message)
 
@@ -304,14 +365,17 @@ class AnomalyService:
 
         ae_score = self._autoencoder_score(matrix)
         if ae_score is None:
-            ae_score = self._heuristic_component(message)
+            ae_score = rule_value
 
-        anomaly_score = min(0.99, max(0.01, 0.62 * iso_score + 0.38 * ae_score))
+        ml_score = 0.62 * iso_score + 0.38 * ae_score
+        # The deterministic security rules are high-precision; never let the
+        # unsupervised model suppress a known-bad pattern. Take the stronger signal.
+        anomaly_score = min(0.99, max(0.01, ml_score, rule_value))
         classification = self._classification(anomaly_score)
 
         explanation = (
-            f"Hybrid inference iso={iso_score:.3f}, autoencoder={ae_score:.3f}, "
-            f"decision={raw_decision:.4f}, prediction={prediction}"
+            f"Hybrid inference iso={iso_score:.3f}, ml={ml_score:.3f}, "
+            f"rule={rule_value:.3f} ({rule_reason})"
         )
 
         return ModelScore(
@@ -320,25 +384,18 @@ class AnomalyService:
             explanation=explanation,
             model_breakdown={
                 "isolation_forest": round(float(iso_score), 4),
-                "autoencoder": round(float(ae_score), 4),
+                "rule_engine": round(float(rule_value), 4),
             },
         )
 
     def _heuristic_score(self, message: str) -> ModelScore:
-        score = self._heuristic_component(message)
+        score, reason = self._rule_score(message)
         classification = self._classification(score)
-        if classification == "critical":
-            reason = "Keyword heuristic detected high-risk tokens"
-        elif classification == "suspicious":
-            reason = "Keyword heuristic detected suspicious behavior"
-        else:
-            reason = "No anomaly indicators detected by heuristic model"
-
         return ModelScore(
             anomaly_score=round(score, 4),
             classification=classification,
-            explanation=reason,
-            model_breakdown={"heuristic": round(score, 4)},
+            explanation=f"Rule engine: {reason}",
+            model_breakdown={"rule_engine": round(score, 4)},
         )
 
     def _classification(self, score: float) -> str:

@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import {
@@ -12,7 +12,6 @@ import {
   FileUp,
   RefreshCcw,
   Server,
-  Sparkles,
   Zap,
 } from "lucide-react";
 
@@ -138,6 +137,12 @@ export function DashboardApp() {
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / pageSize)), [pageSize, total]);
 
+  const isFeedbackError = useMemo(
+    () => /fail|error|required|please|unable|missing/i.test(feedback),
+    [feedback]
+  );
+  const statLoading = isLoading && !overview;
+
   const anomalyRateText = useMemo(() => {
     if (!overview) return "--";
     return `${overview.anomaly_rate.toFixed(2)}%`;
@@ -153,7 +158,7 @@ export function DashboardApp() {
     };
   }, [overview]);
 
-  async function refreshAll(targetPage = page) {
+  const refreshAll = useCallback(async (targetPage = 1) => {
     setIsLoading(true);
     setFeedback("");
     try {
@@ -181,12 +186,11 @@ export function DashboardApp() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [classificationFilter, serviceFilter, levelFilter, pageSize]);
 
   useEffect(() => {
     void refreshAll(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classificationFilter, serviceFilter, levelFilter]);
+  }, [refreshAll]);
 
   useEffect(() => {
     const socket = createRealtimeSocket();
@@ -239,13 +243,12 @@ export function DashboardApp() {
     };
   }, [pageSize]);
 
-  async function handleIngest(e: FormEvent<HTMLFormElement>) {
+  const handleIngest = useCallback(async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!form.message.trim()) {
       setFeedback("Message is required.");
       return;
     }
-
     setIsSubmitting(true);
     setFeedback("");
     try {
@@ -267,15 +270,14 @@ export function DashboardApp() {
     } finally {
       setIsSubmitting(false);
     }
-  }
+  }, [form, refreshAll]);
 
-  async function handleUpload(e: FormEvent<HTMLFormElement>) {
+  const handleUpload = useCallback(async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!uploadFile) {
       setFeedback("Please select a file first.");
       return;
     }
-
     setIsUploading(true);
     setFeedback("");
     try {
@@ -288,9 +290,9 @@ export function DashboardApp() {
     } finally {
       setIsUploading(false);
     }
-  }
+  }, [uploadFile, refreshAll]);
 
-  async function handleTrainModel() {
+  const handleTrainModel = useCallback(async () => {
     setIsTraining(true);
     setFeedback("");
     try {
@@ -302,11 +304,11 @@ export function DashboardApp() {
     } finally {
       setIsTraining(false);
     }
-  }
+  }, [page, refreshAll]);
 
   return (
     <div className="lg-shell">
-      <main className="lg-section pt-10">
+      <main className="lg-section animate-fade-in pt-10">
         <section className="bg-card border border-border shadow-none rounded-[12px] p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -323,7 +325,16 @@ export function DashboardApp() {
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <p className="lg-chip">
-            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="relative flex h-2 w-2" aria-hidden="true">
+              {socketState === "connected" && (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3ecf8e] opacity-60" />
+              )}
+              <span
+                className={`relative inline-flex h-2 w-2 rounded-full ${
+                  socketState === "connected" ? "bg-[#3ecf8e]" : "bg-amber-400"
+                }`}
+              />
+            </span>
             {socketState === "connected" ? "Realtime stream active" : "Realtime stream reconnecting"}
           </p>
           <Button
@@ -332,13 +343,30 @@ export function DashboardApp() {
             size="sm"
             onClick={() => void refreshAll(page)}
             disabled={isLoading}
+            className="focus-ring"
           >
-            <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+            <RefreshCcw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} aria-hidden="true" />
             Refresh
           </Button>
         </div>
 
-        {feedback ? <div className="bg-card border border-border shadow-none rounded-[12px] p-6 mt-4 rounded-xl px-4 py-3 text-sm">{feedback}</div> : null}
+        {feedback ? (
+          <div
+            className={`mt-4 flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ${
+              isFeedbackError
+                ? "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400"
+                : "border-[#3ecf8e]/30 bg-[#3ecf8e]/10 text-[var(--brand-accent)]"
+            }`}
+            role={isFeedbackError ? "alert" : "status"}
+          >
+            {isFeedbackError ? (
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            ) : (
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            )}
+            <span>{feedback}</span>
+          </div>
+        ) : null}
 
         <section className="mt-6 grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
           <ActiveAnomalyTracker compact />
@@ -390,35 +418,51 @@ export function DashboardApp() {
         </section>
 
         <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <article className="bg-card border border-border shadow-none rounded-[12px] p-6">
+          <article className="lg-card-hover bg-card border border-border shadow-none rounded-[12px] p-6">
             <p className="lg-subtle text-xs uppercase tracking-[0.14em]">Total Logs</p>
-            <p className="mt-3 text-3xl font-semibold tracking-tight">{overview?.total_logs ?? "--"}</p>
+            {statLoading ? (
+              <span className="skeleton mt-3 block h-8 w-20 rounded" />
+            ) : (
+              <p className="mt-3 text-3xl font-semibold tracking-tight">{overview?.total_logs ?? 0}</p>
+            )}
           </article>
-          <article className="bg-card border border-border shadow-none rounded-[12px] p-6">
+          <article className="lg-card-hover bg-card border border-border shadow-none rounded-[12px] p-6">
             <p className="lg-subtle text-xs uppercase tracking-[0.14em]">Anomaly Rate</p>
-            <p className="mt-3 text-3xl font-semibold tracking-tight">{anomalyRateText}</p>
+            {statLoading ? (
+              <span className="skeleton mt-3 block h-8 w-20 rounded" />
+            ) : (
+              <p className="mt-3 text-3xl font-semibold tracking-tight">{anomalyRateText}</p>
+            )}
           </article>
-          <article className="bg-card border border-border shadow-none rounded-[12px] p-6">
+          <article className="lg-card-hover bg-card border border-border shadow-none rounded-[12px] p-6">
             <p className="lg-subtle text-xs uppercase tracking-[0.14em]">Critical Events</p>
-            <p className="mt-3 text-3xl font-semibold tracking-tight">{overview?.total_critical ?? "--"}</p>
+            {statLoading ? (
+              <span className="skeleton mt-3 block h-8 w-16 rounded" />
+            ) : (
+              <p className="mt-3 text-3xl font-semibold tracking-tight">{overview?.total_critical ?? 0}</p>
+            )}
           </article>
-          <article className="bg-card border border-border shadow-none rounded-[12px] p-6">
+          <article className="lg-card-hover bg-card border border-border shadow-none rounded-[12px] p-6">
             <p className="lg-subtle text-xs uppercase tracking-[0.14em]">Pending Alerts</p>
             <p className="mt-3 flex items-center gap-2 text-2xl font-semibold tracking-tight">
               <Zap className="h-5 w-5 text-(--lg-accent-strong)" aria-hidden="true" />
               {pendingAlerts}
             </p>
           </article>
-          <article className="bg-card border border-border shadow-none rounded-[12px] p-6">
+          <article className="lg-card-hover bg-card border border-border shadow-none rounded-[12px] p-6">
             <p className="lg-subtle text-xs uppercase tracking-[0.14em]">Model Status</p>
-            <p className="mt-3 flex items-center gap-2 text-lg font-semibold tracking-tight">
-              {modelStatus?.trained ? (
-                <CheckCircle2 className="h-5 w-5 text-emerald-400" aria-hidden="true" />
-              ) : (
-                <AlertTriangle className="h-5 w-5 text-amber-400" aria-hidden="true" />
-              )}
-              {modelStatus?.trained ? "Hybrid Trained" : "Heuristic Fallback"}
-            </p>
+            {statLoading ? (
+              <span className="skeleton mt-3 block h-7 w-28 rounded" />
+            ) : (
+              <p className="mt-3 flex items-center gap-2 text-lg font-semibold tracking-tight">
+                {modelStatus?.trained ? (
+                  <CheckCircle2 className="h-5 w-5 text-emerald-400" aria-hidden="true" />
+                ) : (
+                  <AlertTriangle className="h-5 w-5 text-amber-400" aria-hidden="true" />
+                )}
+                {modelStatus?.trained ? "Hybrid Trained" : "Heuristic Fallback"}
+              </p>
+            )}
           </article>
         </section>
 
@@ -589,23 +633,44 @@ export function DashboardApp() {
                 </tr>
               </thead>
               <tbody>
-                {logs.map((row) => (
-                  <tr key={row.id} className="border-t border-(--border)">
-                    <td className="px-2 py-2 text-xs">{new Date(row.timestamp).toLocaleString()}</td>
-                    <td className="px-2 py-2 font-medium">{row.service}</td>
-                    <td className="px-2 py-2">{row.level}</td>
-                    <td className="px-2 py-2 lg-subtle">
-                      {row.message}
-                      {row.explanation ? <p className="mt-1 text-[11px]">{row.explanation}</p> : null}
-                    </td>
-                    <td className="px-2 py-2">{row.anomaly_score.toFixed(2)}</td>
-                    <td className="px-2 py-2">
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${classificationChip(row.classification)}`}>
-                        {row.classification}
-                      </span>
+                {statLoading ? (
+                  Array.from({ length: 6 }).map((_, idx) => (
+                    <tr key={`sk-${idx}`} className="border-t border-(--border)">
+                      {Array.from({ length: 6 }).map((__, cell) => (
+                        <td key={cell} className="px-2 py-3">
+                          <span className="skeleton block h-3.5 w-full rounded" />
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : logs.length === 0 ? (
+                  <tr className="border-t border-(--border)">
+                    <td colSpan={6} className="px-2 py-12 text-center">
+                      <p className="lg-subtle text-sm">No logs match the current filters.</p>
+                      <p className="lg-subtle mt-1 text-xs">
+                        Ingest a log above or adjust the service / level / label filters.
+                      </p>
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  logs.map((row) => (
+                    <tr key={row.id} className="border-t border-(--border) transition-colors hover:bg-[var(--muted)]/40">
+                      <td className="px-2 py-2 text-xs">{new Date(row.timestamp).toLocaleString()}</td>
+                      <td className="px-2 py-2 font-medium">{row.service}</td>
+                      <td className="px-2 py-2">{row.level}</td>
+                      <td className="px-2 py-2 lg-subtle">
+                        {row.message}
+                        {row.explanation ? <p className="mt-1 text-[11px]">{row.explanation}</p> : null}
+                      </td>
+                      <td className="px-2 py-2">{row.anomaly_score.toFixed(2)}</td>
+                      <td className="px-2 py-2">
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${classificationChip(row.classification)}`}>
+                          {row.classification}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

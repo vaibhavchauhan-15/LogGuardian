@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 import base64
 import json
+import uuid
 from typing import Optional
 
 from fastapi import Header, HTTPException
@@ -53,6 +54,25 @@ def get_dashboard_service() -> DashboardService:
     return DashboardService(get_anomaly_service())
 
 
+# Stable namespace for deriving a deterministic UUID from a non-UUID auth subject
+# (e.g. a Firebase UID). The database stores user ids as uuid, so external auth
+# identifiers must be mapped to a uuid consistently.
+_USER_ID_NAMESPACE = uuid.UUID("b7a3c9e2-1f4d-4a6b-8c2e-9d0f1a2b3c4d")
+
+
+def _to_db_user_id(raw_user_id: str) -> str:
+    """Return a canonical uuid string for the given auth subject.
+
+    Subjects that are already valid UUIDs (e.g. legacy Supabase Auth ids) are
+    returned unchanged; everything else (Firebase UIDs, etc.) is hashed into a
+    stable uuid5 so the same user always maps to the same database id.
+    """
+    try:
+        return str(uuid.UUID(raw_user_id))
+    except (ValueError, AttributeError, TypeError):
+        return str(uuid.uuid5(_USER_ID_NAMESPACE, raw_user_id))
+
+
 @dataclass(frozen=True)
 class RequestUserContext:
     user_id: str
@@ -92,4 +112,4 @@ def get_request_user_context(
     if not user_id:
         raise HTTPException(status_code=401, detail="Missing user identity (X-User-Id or Bearer token)")
 
-    return RequestUserContext(user_id=user_id, email=email)
+    return RequestUserContext(user_id=_to_db_user_id(user_id), email=email)

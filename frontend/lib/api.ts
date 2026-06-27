@@ -4,7 +4,7 @@ export type AlertStatus = "pending" | "resolved";
 export type DashboardType = "portfolio" | "ecommerce" | "saas" | "api";
 export type DashboardHealth = "healthy" | "warning" | "critical";
 
-export const ACCESS_TOKEN_STORAGE_KEY = "lg_supabase_access_token";
+export const ACCESS_TOKEN_STORAGE_KEY = "lg_access_token";
 export const USER_ID_STORAGE_KEY = "lg_user_id";
 export const USER_EMAIL_STORAGE_KEY = "lg_user_email";
 export const ACTIVE_DASHBOARD_STORAGE_KEY = "lg_active_dashboard_id";
@@ -140,6 +140,23 @@ export type RealtimeEvent = {
   payload: Record<string, unknown>;
 };
 
+import { cacheGet, cacheInvalidate, cacheSet, cacheClearAll } from "@/lib/query-cache";
+
+// TTLs (milliseconds)
+const TTL_DASHBOARDS = 30_000;   // list changes rarely
+const TTL_METRICS = 20_000;      // per-dashboard detail
+const TTL_ANALYTICS = 20_000;    // overview + trend
+const TTL_LOGS = 15_000;         // log table — refresh-driven
+const TTL_ALERTS = 15_000;
+const TTL_MODEL = 60_000;        // model status is slow to change
+
+export function invalidateDashboards() { cacheInvalidate("dashboards:"); }
+export function invalidateMetrics(dashboardId: string) { cacheInvalidate(`metrics:${dashboardId}`); }
+export function invalidateAnalytics() { cacheInvalidate("analytics:"); }
+export function invalidateLogs() { cacheInvalidate("logs:"); }
+export function invalidateAlerts() { cacheInvalidate("alerts:"); }
+export function clearApiCache() { cacheClearAll(); }
+
 const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_BASE_URL ??
   (process.env.NODE_ENV === "production" ? "" : "http://127.0.0.1:8000")
@@ -220,7 +237,13 @@ export function createRealtimeSocket(dashboardId?: string) {
 }
 
 export function listDashboards() {
-  return apiFetch<DashboardListResponse>("/api/v1/dashboards");
+  const key = "dashboards:list";
+  const cached = cacheGet<DashboardListResponse>(key);
+  if (cached) return Promise.resolve(cached);
+  return apiFetch<DashboardListResponse>("/api/v1/dashboards").then((data) => {
+    cacheSet(key, data, TTL_DASHBOARDS);
+    return data;
+  });
 }
 
 export function createDashboard(payload: {
@@ -230,10 +253,11 @@ export function createDashboard(payload: {
 }) {
   return apiFetch<DashboardSummary>("/api/v1/dashboards", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  }).then((data) => {
+    cacheInvalidate("dashboards:");
+    return data;
   });
 }
 
@@ -251,17 +275,30 @@ export function getDashboardMetrics(
   if (params?.endTime) query.set("end_time", params.endTime);
   const queryString = query.toString();
   const suffix = queryString ? `?${queryString}` : "";
-  return apiFetch<DashboardMetricsResponse>(`/api/v1/dashboards/${dashboardId}/metrics${suffix}`);
+  const key = `metrics:${dashboardId}:${queryString}`;
+  const cached = cacheGet<DashboardMetricsResponse>(key);
+  if (cached) return Promise.resolve(cached);
+  return apiFetch<DashboardMetricsResponse>(`/api/v1/dashboards/${dashboardId}/metrics${suffix}`).then(
+    (data) => {
+      cacheSet(key, data, TTL_METRICS);
+      return data;
+    }
+  );
 }
 
 export function getAnalytics(days = 14, dashboardId?: string) {
   const effectiveDashboardId = getActiveDashboardId(dashboardId);
   const query = new URLSearchParams();
   query.set("days", String(days));
-  if (effectiveDashboardId) {
-    query.set("dashboard_id", effectiveDashboardId);
-  }
-  return apiFetch<AnalyticsOverview>(`/api/v1/analytics/overview?${query.toString()}`);
+  if (effectiveDashboardId) query.set("dashboard_id", effectiveDashboardId);
+  const qs = query.toString();
+  const key = `analytics:overview:${qs}`;
+  const cached = cacheGet<AnalyticsOverview>(key);
+  if (cached) return Promise.resolve(cached);
+  return apiFetch<AnalyticsOverview>(`/api/v1/analytics/overview?${qs}`).then((data) => {
+    cacheSet(key, data, TTL_ANALYTICS);
+    return data;
+  });
 }
 
 export function getLogs(params: {
@@ -277,9 +314,7 @@ export function getLogs(params: {
 }) {
   const query = new URLSearchParams();
   const effectiveDashboardId = getActiveDashboardId(params.dashboardId);
-  if (!effectiveDashboardId) {
-    throw new Error("dashboard_id is required for log queries");
-  }
+  if (!effectiveDashboardId) throw new Error("dashboard_id is required for log queries");
   query.set("dashboard_id", effectiveDashboardId);
   query.set("page", String(params.page ?? 1));
   query.set("page_size", String(params.pageSize ?? 25));
@@ -289,8 +324,14 @@ export function getLogs(params: {
   if (params.classification) query.set("classification", params.classification);
   if (params.startTime) query.set("start_time", params.startTime);
   if (params.endTime) query.set("end_time", params.endTime);
-
-  return apiFetch<LogListResponse>(`/api/v1/logs?${query.toString()}`);
+  const qs = query.toString();
+  const key = `logs:${qs}`;
+  const cached = cacheGet<LogListResponse>(key);
+  if (cached) return Promise.resolve(cached);
+  return apiFetch<LogListResponse>(`/api/v1/logs?${qs}`).then((data) => {
+    cacheSet(key, data, TTL_LOGS);
+    return data;
+  });
 }
 
 export function ingestLog(payload: {
@@ -301,20 +342,21 @@ export function ingestLog(payload: {
   timestamp?: string;
 }) {
   const effectiveDashboardId = payload.dashboard_id ?? getActiveDashboardId();
-  if (!effectiveDashboardId) {
-    throw new Error("dashboard_id is required for ingestion");
-  }
-
+  if (!effectiveDashboardId) throw new Error("dashboard_id is required for ingestion");
   return apiFetch<LogIngestSummary>("/api/v1/logs/ingest", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       ...payload,
       dashboard_id: effectiveDashboardId,
       timestamp: payload.timestamp ?? new Date().toISOString(),
     }),
+  }).then((data) => {
+    cacheInvalidate("logs:");
+    cacheInvalidate("analytics:");
+    cacheInvalidate(`metrics:${effectiveDashboardId}`);
+    cacheInvalidate("dashboards:");
+    return data;
   });
 }
 
@@ -333,50 +375,61 @@ export function ingestBatch(payload: {
     dashboard_id: log.dashboard_id ?? effectiveDashboardId,
     timestamp: log.timestamp ?? new Date().toISOString(),
   }));
-
   if (!preparedLogs.length || !preparedLogs[0].dashboard_id) {
     throw new Error("dashboard_id is required for batch ingestion");
   }
-
+  const dashboardId = preparedLogs[0].dashboard_id;
   return apiFetch<BatchIngestResponse>("/api/v1/logs/ingest/batch", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ logs: preparedLogs }),
+  }).then((data) => {
+    cacheInvalidate("logs:");
+    cacheInvalidate("analytics:");
+    cacheInvalidate(`metrics:${dashboardId}`);
+    cacheInvalidate("dashboards:");
+    return data;
   });
 }
 
 export function uploadLogFile(file: File, dashboardId?: string) {
   const effectiveDashboardId = getActiveDashboardId(dashboardId);
-  if (!effectiveDashboardId) {
-    throw new Error("dashboard_id is required for file uploads");
-  }
-
+  if (!effectiveDashboardId) throw new Error("dashboard_id is required for file uploads");
   const formData = new FormData();
   formData.append("file", file);
-
   return apiFetch<{ ingested: number; skipped: number; trained: boolean }>(
     `/api/v1/logs/upload?train_model=true&dashboard_id=${encodeURIComponent(effectiveDashboardId)}`,
-    {
-      method: "POST",
-      body: formData,
-    }
-  );
+    { method: "POST", body: formData }
+  ).then((data) => {
+    cacheInvalidate("logs:");
+    cacheInvalidate("analytics:");
+    cacheInvalidate(`metrics:${effectiveDashboardId}`);
+    cacheInvalidate("dashboards:");
+    return data;
+  });
 }
 
 export function getModelStatus() {
-  return apiFetch<ModelStatus>("/api/v1/model/status");
+  const key = "model:status";
+  const cached = cacheGet<ModelStatus>(key);
+  if (cached) return Promise.resolve(cached);
+  return apiFetch<ModelStatus>("/api/v1/model/status").then((data) => {
+    cacheSet(key, data, TTL_MODEL);
+    return data;
+  });
 }
 
 export function trainModel(dashboardId?: string) {
   const effectiveDashboardId = getActiveDashboardId(dashboardId);
-  if (!effectiveDashboardId) {
-    throw new Error("dashboard_id is required for model training");
-  }
-
-  return apiFetch<TrainResponse>(`/api/v1/model/train?dashboard_id=${encodeURIComponent(effectiveDashboardId)}`, {
-    method: "POST",
+  if (!effectiveDashboardId) throw new Error("dashboard_id is required for model training");
+  return apiFetch<TrainResponse>(
+    `/api/v1/model/train?dashboard_id=${encodeURIComponent(effectiveDashboardId)}`,
+    { method: "POST" }
+  ).then((data) => {
+    cacheInvalidate("model:");
+    cacheInvalidate("analytics:");
+    cacheInvalidate(`metrics:${effectiveDashboardId}`);
+    return data;
   });
 }
 
@@ -390,33 +443,35 @@ export function getAlerts(params: {
 }) {
   const query = new URLSearchParams();
   const effectiveDashboardId = getActiveDashboardId(params.dashboardId);
-  if (!effectiveDashboardId) {
-    throw new Error("dashboard_id is required for alert queries");
-  }
+  if (!effectiveDashboardId) throw new Error("dashboard_id is required for alert queries");
   query.set("dashboard_id", effectiveDashboardId);
   query.set("page", String(params.page ?? 1));
   query.set("page_size", String(params.pageSize ?? 25));
   if (params.status) query.set("status", params.status);
   if (params.priority) query.set("priority", params.priority);
   if (params.service) query.set("service", params.service);
-
-  return apiFetch<AlertListResponse>(`/api/v1/alerts?${query.toString()}`);
+  const qs = query.toString();
+  const key = `alerts:${qs}`;
+  const cached = cacheGet<AlertListResponse>(key);
+  if (cached) return Promise.resolve(cached);
+  return apiFetch<AlertListResponse>(`/api/v1/alerts?${qs}`).then((data) => {
+    cacheSet(key, data, TTL_ALERTS);
+    return data;
+  });
 }
 
 export function resolveAlert(alertId: string, resolvedBy = "operator", dashboardId?: string) {
   const effectiveDashboardId = getActiveDashboardId(dashboardId);
-  if (!effectiveDashboardId) {
-    throw new Error("dashboard_id is required for alert actions");
-  }
-
+  if (!effectiveDashboardId) throw new Error("dashboard_id is required for alert actions");
   return apiFetch<{ success: boolean; alert: AlertRecord | null }>(
     `/api/v1/alerts/${alertId}/resolve?dashboard_id=${encodeURIComponent(effectiveDashboardId)}`,
     {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ resolved_by: resolvedBy }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resolved_by: resolvedBy }),
     }
-  );
+  ).then((data) => {
+    cacheInvalidate("alerts:");
+    return data;
+  });
 }

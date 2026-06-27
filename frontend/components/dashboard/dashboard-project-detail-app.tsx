@@ -191,7 +191,7 @@ export function DashboardProjectDetailApp({ dashboardId }: DashboardProjectDetai
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  async function loadDashboardTitle() {
+  const loadDashboardTitle = useCallback(async () => {
     try {
       await resolveAndStoreUserContext();
       const response = await listDashboards();
@@ -200,17 +200,14 @@ export function DashboardProjectDetailApp({ dashboardId }: DashboardProjectDetai
     } catch {
       setDashboardTitle("Dashboard Workspace");
     }
-  }
+  }, [dashboardId]);
 
-  async function refreshMetrics() {
+  const refreshMetrics = useCallback(async () => {
     setLoading(true);
     setFeedback("");
-
     try {
       await resolveAndStoreUserContext();
-
       window.localStorage.setItem(ACTIVE_DASHBOARD_STORAGE_KEY, dashboardId);
-
       const response = await getDashboardMetrics(dashboardId, {
         severity,
         startTime: getStartTime(range),
@@ -228,18 +225,17 @@ export function DashboardProjectDetailApp({ dashboardId }: DashboardProjectDetai
     } finally {
       setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    void refreshMetrics();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dashboardId, range, severity]);
 
   useEffect(() => {
-    void loadDashboardTitle();
-  }, [dashboardId]);
+    void refreshMetrics();
+  }, [refreshMetrics]);
 
-  const hasRealData = (metrics?.total_logs_processed ?? 0) > 0;
+  useEffect(() => {
+    void loadDashboardTitle();
+  }, [loadDashboardTitle]);
+
+  const hasRealData = useMemo(() => (metrics?.total_logs_processed ?? 0) > 0, [metrics]);
 
   const trendData = useMemo(() => {
     const real = (metrics?.trend ?? []).map((point) => ({

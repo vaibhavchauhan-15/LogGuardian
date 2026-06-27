@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { AlertCircle, Loader2, Radio, ShieldAlert } from "lucide-react";
 
-import { createClient } from "@/lib/supabase/client";
+import { signInWithGoogle, handleGoogleRedirectResult } from "@/lib/firebase/auth";
+import { isFirebaseConfigured } from "@/lib/firebase/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DemoLevel = "DEBUG" | "INFO" | "WARN" | "ERROR" | "CRITICAL";
@@ -211,30 +212,46 @@ export function SignInExperience() {
   const searchParams = useSearchParams();
   const rawOauthError = searchParams.get("error_description") ?? searchParams.get("error");
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "") ?? "";
-  const supabaseKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
-  const authEnabled = Boolean(supabaseUrl && supabaseKey);
+  const authEnabled = isFirebaseConfigured;
 
-  const oauthErrorMessage = rawOauthError?.includes("No API key found")
-    ? "Supabase auth is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY."
-    : rawOauthError;
+  const oauthErrorMessage = rawOauthError ?? null;
+
+  // On mount: pick up a pending redirect result (popup-blocked fallback path).
+  useEffect(() => {
+    if (!authEnabled) return;
+    handleGoogleRedirectResult().then((ctx) => {
+      if (!ctx) return;
+      const next = searchParams.get("next") ?? "/dashboard";
+      window.location.assign(next.startsWith("/") ? next : "/dashboard");
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleGoogleSignIn = async () => {
     if (!authEnabled || isSigningIn) return;
     setIsSigningIn(true);
     setErrorMessage(null);
     try {
-      const supabase  = createClient();
-      const next      = searchParams.get("next") ?? "/dashboard";
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo, queryParams: { access_type: "offline", prompt: "consent" } },
-      });
-      if (error) { setErrorMessage(error.message); setIsSigningIn(false); }
+      const result = await signInWithGoogle();
+      if (result === "redirecting") {
+        // Either popup closed by user, or redirect flow started — reset spinner.
+        setIsSigningIn(false);
+        return;
+      }
+      const next = searchParams.get("next") ?? "/dashboard";
+      window.location.assign(next.startsWith("/") ? next : "/dashboard");
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Sign-in failed. Please try again.");
+      const code = (err as { code?: string })?.code ?? "";
+      // Map Firebase error codes to human-readable messages.
+      const msg =
+        code === "auth/unauthorized-domain"
+          ? "This domain isn't authorised in Firebase. Add localhost to Firebase Console → Authentication → Settings → Authorized domains."
+          : code === "auth/operation-not-allowed"
+          ? "Google sign-in is not enabled. Enable it in Firebase Console → Authentication → Sign-in method."
+          : code === "auth/network-request-failed"
+          ? "Network error. Check your connection and try again."
+          : (err instanceof Error ? err.message : "Sign-in failed. Please try again.");
+      setErrorMessage(msg);
       setIsSigningIn(false);
     }
   };
@@ -362,7 +379,7 @@ export function SignInExperience() {
 
               {authEnabled ? (
                 <p className="mt-3 text-center font-mono text-[10px] text-muted-foreground">
-                  Secured by Supabase Auth · No password required
+                  Secured by Firebase Auth · No password required
                 </p>
               ) : null}
             </div>

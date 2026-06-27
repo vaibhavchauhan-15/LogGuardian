@@ -1,13 +1,51 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, LayoutDashboard, PlusCircle, RefreshCcw } from "lucide-react";
+import { ArrowRight, LayoutDashboard, PlusCircle, RefreshCcw, ServerCrash, LogIn } from "lucide-react";
 
 import { type DashboardSummary, listDashboards } from "@/lib/api";
 import { resolveAndStoreUserContext } from "@/lib/user-context";
 import { AppHeader } from "@/components/app-header";
+import { DashboardCardSkeleton } from "@/components/dashboard/skeletons";
+
+type LoadError = {
+  title: string;
+  detail: string;
+  isAuth: boolean;
+};
+
+function classifyError(error: unknown): LoadError {
+  const message = error instanceof Error ? error.message : "Unable to load dashboards";
+
+  if (message.includes("Missing user identity") || message.includes("Missing X-User-Id")) {
+    return {
+      title: "Sign in required",
+      detail: "Please sign in with Google to view your monitoring workspaces.",
+      isAuth: true,
+    };
+  }
+
+  if (
+    message.includes("Failed to fetch") ||
+    message.includes("NetworkError") ||
+    message.toLowerCase().includes("fetch")
+  ) {
+    return {
+      title: "Can't reach the server",
+      detail:
+        "The LogGuardian API isn't responding. Make sure the backend is running, then try again.",
+      isAuth: false,
+    };
+  }
+
+  return {
+    title: "Something went wrong",
+    detail: message,
+    isAuth: false,
+  };
+}
 
 function dashboardStatusChip(status: DashboardSummary["status"]) {
   if (status === "critical") {
@@ -45,36 +83,31 @@ function anomalyRateColor(value: number) {
 export function DashboardProjectsApp() {
   const [dashboards, setDashboards] = useState<DashboardSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState("");
+  const [error, setError] = useState<LoadError | null>(null);
 
   const criticalCount = useMemo(
     () => dashboards.filter((d) => d.status === "critical").length,
     [dashboards]
   );
 
-  async function loadDashboards() {
+  const loadDashboards = useCallback(async () => {
     setLoading(true);
-    setFeedback("");
+    setError(null);
     try {
       await resolveAndStoreUserContext();
       const response = await listDashboards();
       setDashboards(response.items);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to load dashboards";
-      if (message.includes("Missing user identity") || message.includes("Missing X-User-Id")) {
-        setFeedback("Please sign in first to view your dashboards.");
-      } else {
-        setFeedback(message);
-      }
+    } catch (err) {
+      setError(classifyError(err));
       setDashboards([]);
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     void loadDashboards();
-  }, []);
+  }, [loadDashboards]);
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
@@ -103,7 +136,7 @@ export function DashboardProjectsApp() {
                 id="refresh-dashboards-btn"
                 type="button"
                 onClick={() => void loadDashboards()}
-                className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-transparent px-4 py-2 font-['IBM_Plex_Mono'] text-sm font-medium text-[var(--foreground)] transition-colors duration-150 hover:bg-[var(--muted)] disabled:opacity-50"
+                className="focus-ring flex items-center gap-2 rounded-lg border border-[var(--border)] bg-transparent px-4 py-2 font-['IBM_Plex_Mono'] text-sm font-medium text-[var(--foreground)] transition-colors duration-150 hover:bg-[var(--muted)] disabled:opacity-50"
                 disabled={loading}
               >
                 <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />
@@ -112,7 +145,7 @@ export function DashboardProjectsApp() {
               <Link
                 id="create-dashboard-btn"
                 href="/create-dashboard"
-                className="flex items-center gap-2 rounded-lg bg-[#3ecf8e] px-4 py-2 text-sm font-semibold text-[#0a0a0a] transition-colors duration-150 hover:bg-[#5af0a8]"
+                className="focus-ring flex items-center gap-2 rounded-lg bg-[#3ecf8e] px-4 py-2 text-sm font-semibold text-[#0a0a0a] transition-colors duration-150 hover:bg-[#5af0a8]"
               >
                 <PlusCircle className="h-4 w-4" aria-hidden="true" />
                 Create Dashboard
@@ -152,30 +185,68 @@ export function DashboardProjectsApp() {
           </div>
         </section>
 
-        {/* ── Feedback ── */}
-        {feedback ? (
-          <div className="px-5 pt-6 sm:px-8 lg:px-10">
-            <p className="rounded-xl border border-red-900/40 bg-red-950/20 px-4 py-3 font-['IBM_Plex_Mono'] text-xs text-red-300">
-              {feedback}
-            </p>
-          </div>
-        ) : null}
-
         {/* ── Cards Grid ── */}
         <section className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2 lg:grid-cols-3 lg:p-8">
           {loading ? (
-            Array.from({ length: 6 }).map((_, idx) => (
-              <div key={idx} className="skeleton h-64 rounded-xl" />
-            ))
+            Array.from({ length: 6 }).map((_, idx) => <DashboardCardSkeleton key={idx} />)
+          ) : error ? (
+            <div className="col-span-full flex flex-col items-center justify-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--card)] px-6 py-20 text-center">
+              <div
+                className={`flex h-12 w-12 items-center justify-center rounded-xl border ${
+                  error.isAuth
+                    ? "border-[#3ecf8e]/30 bg-[#3ecf8e]/10 text-[#3ecf8e]"
+                    : "border-red-900/50 bg-red-950/30 text-red-400"
+                }`}
+              >
+                {error.isAuth ? (
+                  <LogIn className="h-5 w-5" aria-hidden="true" />
+                ) : (
+                  <ServerCrash className="h-5 w-5" aria-hidden="true" />
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="font-['Space_Grotesk'] text-lg font-medium text-[var(--foreground)]">
+                  {error.title}
+                </h3>
+                <p className="mx-auto max-w-sm font-['IBM_Plex_Mono'] text-[13px] leading-relaxed text-[var(--muted-foreground)]">
+                  {error.detail}
+                </p>
+              </div>
+              {error.isAuth ? (
+                <Link
+                  href="/signin?next=/dashboard"
+                  className="focus-ring flex items-center gap-2 rounded-lg bg-[#3ecf8e] px-4 py-2 text-sm font-semibold text-[#0a0a0a] transition-colors duration-150 hover:bg-[#5af0a8]"
+                >
+                  <LogIn className="h-4 w-4" aria-hidden="true" />
+                  Sign in
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void loadDashboards()}
+                  className="focus-ring flex items-center gap-2 rounded-lg border border-[var(--border)] bg-transparent px-4 py-2 font-['IBM_Plex_Mono'] text-sm font-medium text-[var(--foreground)] transition-colors duration-150 hover:bg-[var(--muted)]"
+                >
+                  <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+                  Try again
+                </button>
+              )}
+            </div>
           ) : dashboards.length === 0 ? (
-            <div className="col-span-full flex flex-col items-center justify-center gap-4 py-24">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--card)]">
+            <div className="col-span-full flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-[var(--border)] bg-[var(--card)] px-6 py-20 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--background)]">
                 <LayoutDashboard className="h-5 w-5 text-[var(--muted-foreground)]" aria-hidden="true" />
               </div>
-              <p className="font-['IBM_Plex_Mono'] text-sm text-[var(--muted-foreground)]">No dashboards yet</p>
+              <div className="space-y-1.5">
+                <h3 className="font-['Space_Grotesk'] text-lg font-medium text-[var(--foreground)]">
+                  No dashboards yet
+                </h3>
+                <p className="mx-auto max-w-sm font-['IBM_Plex_Mono'] text-[13px] leading-relaxed text-[var(--muted-foreground)]">
+                  Create your first monitoring workspace to start ingesting logs and detecting anomalies.
+                </p>
+              </div>
               <Link
                 href="/create-dashboard"
-                className="flex items-center gap-2 rounded-lg bg-[#3ecf8e] px-4 py-2 text-sm font-semibold text-[#0a0a0a] transition-colors duration-150 hover:bg-[#5af0a8]"
+                className="focus-ring flex items-center gap-2 rounded-lg bg-[#3ecf8e] px-4 py-2 text-sm font-semibold text-[#0a0a0a] transition-colors duration-150 hover:bg-[#5af0a8]"
               >
                 <PlusCircle className="h-4 w-4" aria-hidden="true" />
                 Create your first dashboard
@@ -190,7 +261,7 @@ export function DashboardProjectsApp() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.25, delay: index * 0.04 }}
-                  className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] transition-all duration-200 hover:border-[#3ecf8e]/30 hover:shadow-[0_0_24px_rgba(62,207,142,0.06)]"
+                  className="lg-card-hover group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]"
                 >
                   {/* Card Header */}
                   <div className="px-4 pb-3 pt-4">

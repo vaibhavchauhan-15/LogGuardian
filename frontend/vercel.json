@@ -6,41 +6,75 @@
   "nodeVersion": "22.x",
   "env": [
     {
-      "key": "NEXT_PUBLIC_SUPABASE_URL",
-      "description": "Supabase project URL",
+      "key": "NEXT_PUBLIC_API_BASE_URL",
+      "description": "Backend API URL (e.g., https://logguardian-api.railway.app or Vercel backend URL)",
       "value": ""
     },
     {
-      "key": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-      "description": "Supabase anonymous key for client-side auth",
+      "key": "NEXT_PUBLIC_WS_BASE_URL",
+      "description": "WebSocket base URL — derived from NEXT_PUBLIC_API_BASE_URL if omitted (e.g., wss://logguardian-api.railway.app)",
       "value": ""
     },
     {
       "key": "NEXT_PUBLIC_SITE_URL",
-      "description": "Frontend deployment URL (auto-populated by Vercel)",
+      "description": "Frontend deployment URL — auto-populated by Vercel, override only for custom domains",
       "value": ""
     },
     {
-      "key": "NEXT_PUBLIC_API_URL",
-      "description": "Backend API URL (e.g., https://logguardian-api.railway.app or custom domain)",
+      "key": "NEXT_PUBLIC_FIREBASE_API_KEY",
+      "description": "Firebase web API key (Firebase Console → Project settings → General → Your apps)",
+      "value": ""
+    },
+    {
+      "key": "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",
+      "description": "Firebase auth domain (e.g., your-project.firebaseapp.com)",
+      "value": ""
+    },
+    {
+      "key": "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
+      "description": "Firebase project ID",
+      "value": ""
+    },
+    {
+      "key": "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET",
+      "description": "Firebase storage bucket (e.g., your-project.firebasestorage.app)",
+      "value": ""
+    },
+    {
+      "key": "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
+      "description": "Firebase messaging sender ID",
+      "value": ""
+    },
+    {
+      "key": "NEXT_PUBLIC_FIREBASE_APP_ID",
+      "description": "Firebase app ID",
+      "value": ""
+    },
+    {
+      "key": "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID",
+      "description": "Firebase Analytics measurement ID (optional)",
+      "value": ""
+    },
+    {
+      "key": "NEXT_PUBLIC_SUPABASE_URL",
+      "description": "Supabase project URL (only needed if frontend talks to Supabase directly)",
+      "value": ""
+    },
+    {
+      "key": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "description": "Supabase anonymous key (only needed if frontend talks to Supabase directly)",
       "value": ""
     }
   ],
   "headers": [
     {
-      "source": "/api/health",
+      "source": "/(.*)",
       "headers": [
         {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin-allow-popups"
         }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/docs",
-      "destination": "https://vercel.com"
     }
   ]
 }

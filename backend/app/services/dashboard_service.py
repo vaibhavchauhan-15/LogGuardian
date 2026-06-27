@@ -18,6 +18,7 @@ from app.schemas.dashboards import (
     LogSessionRecord,
 )
 from app.schemas.logs import LogIngestRequest, LogListResponse, LogRecord
+from app.services.log_parser import parse_log_line
 from app.services.ml_service import AnomalyService
 from app.services.supabase_client import get_supabase_client
 
@@ -140,16 +141,36 @@ class DashboardService:
         return datetime.now(timezone.utc)
 
     def _signal_from_payload(self, payload: LogIngestRequest) -> dict[str, Any]:
-        score = self.anomaly_service.score(payload.message)
-        timestamp = self._as_datetime(payload.timestamp)
+        message = payload.message.strip()
+        score = self.anomaly_service.score(message)
         severity = score.classification
+
+        # Parse the raw line so analytics reflect its real timestamp/level/service
+        # instead of the ingestion-time defaults ("now", "unknown", "INFO").
+        parsed = parse_log_line(message)
+
+        # Timestamp: prefer one embedded in the log line; fall back to payload.
+        if parsed.timestamp is not None:
+            timestamp = parsed.timestamp.astimezone(timezone.utc)
+        else:
+            timestamp = self._as_datetime(payload.timestamp)
+
+        # Service: prefer parsed; otherwise a non-default payload value; else "app".
+        payload_service = (payload.service or "").strip()
+        if payload_service.lower() in {"", "unknown"}:
+            payload_service = ""
+        service = parsed.service or payload_service or "app"
+
+        # Level: prefer the level token found in the line; else the payload level.
+        level = parsed.level or self._normalize_level(payload.level)
+
         return {
             "id": str(uuid4()),
             "dashboard_id": payload.dashboard_id,
             "timestamp": timestamp,
-            "service": payload.service.strip() or "unknown",
-            "level": self._normalize_level(payload.level),
-            "message": payload.message.strip(),
+            "service": service,
+            "level": level,
+            "message": message,
             "anomaly_score": float(score.anomaly_score),
             "severity": severity,
             "classification": severity,
@@ -398,6 +419,30 @@ class DashboardService:
             "last_updated": now_iso,
         }
 
+    def _dedupe_key(self, timestamp: Any, message: Any) -> str:
+        return f"{self._as_datetime(timestamp).isoformat()}|{str(message or '')[:220]}"
+
+    def _dedupe_signals(self, dashboard_id: str, signals: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Drop signals already represented in the dashboard's recent history.
+
+        Makes re-ingesting the same logs idempotent (same timestamp + message),
+        so pasting/uploading the same batch twice does not double the metrics or
+        the time-series charts.
+        """
+        metrics = self._get_metrics_row(dashboard_id)
+        preview = metrics.get("last_50_logs_preview")
+        preview = preview if isinstance(preview, list) else []
+        seen = {self._dedupe_key(row.get("timestamp"), row.get("message")) for row in preview}
+
+        deduped: list[dict[str, Any]] = []
+        for signal in signals:
+            key = self._dedupe_key(signal.get("timestamp"), signal.get("message"))
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(signal)
+        return deduped
+
     def ingest_many(self, user_id: str, email: Optional[str], payloads: list[LogIngestRequest]) -> LogSessionIngestResponse:
         if not payloads:
             raise ValueError("At least one log payload is required")
@@ -412,6 +457,24 @@ class DashboardService:
         self._get_dashboard_or_raise(user_id, dashboard_id)
 
         signals = [self._signal_from_payload(payload) for payload in payloads]
+        signals = self._dedupe_signals(dashboard_id, signals)
+
+        if not signals:
+            # Every line was a duplicate of recently-ingested data — no-op so the
+            # dashboard metrics and charts stay correct on repeated uploads.
+            now = datetime.now(timezone.utc)
+            return LogSessionIngestResponse(
+                session=LogSessionRecord(
+                    id=str(uuid4()),
+                    dashboard_id=dashboard_id,
+                    logs_count=0,
+                    anomalies_found=0,
+                    critical_alerts=0,
+                    created_at=now,
+                ),
+                logs=[],
+            )
+
         metrics = self._update_dashboard_metrics(dashboard_id, signals)
 
         anomalies_found = sum(1 for signal in signals if signal.get("severity") != "normal")

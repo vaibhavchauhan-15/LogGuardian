@@ -3,12 +3,8 @@
 import { useCallback, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/client";
+import { USER_ID_STORAGE_KEY } from "@/lib/api";
 import { Button, type ButtonProps } from "@/components/ui/button";
-
-const HAS_SUPABASE_CONFIG = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-);
 
 type GetStartedButtonProps = Omit<ButtonProps, "onClick" | "type"> & {
   children: ReactNode;
@@ -27,7 +23,7 @@ export function GetStartedButton({
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(false);
 
-  const handleClick = useCallback(async () => {
+  const handleClick = useCallback(() => {
     if (isChecking) {
       return;
     }
@@ -36,28 +32,13 @@ export function GetStartedButton({
 
     const nextTarget = nextPath ?? dashboardPath;
     const loginTarget = `${loginPath}?next=${encodeURIComponent(nextTarget)}`;
-    const redirectTo = (target: string) => {
-      setIsChecking(false);
-      router.push(target);
-    };
 
-    if (!HAS_SUPABASE_CONFIG) {
-      redirectTo(loginTarget);
-      return;
-    }
+    // A signed-in user has their Firebase UID cached in localStorage.
+    const signedIn =
+      typeof window !== "undefined" && Boolean(window.localStorage.getItem(USER_ID_STORAGE_KEY));
 
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.getUser();
-      if (!error && data.user) {
-        redirectTo(dashboardPath);
-        return;
-      }
-    } catch {
-      // Fall back to login when auth lookup fails.
-    }
-
-    redirectTo(loginTarget);
+    router.push(signedIn ? dashboardPath : loginTarget);
+    setIsChecking(false);
   }, [dashboardPath, isChecking, loginPath, nextPath, router]);
 
   return (
