@@ -3,7 +3,6 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "nodeVersion": "22.x",
   "env": [
     {
       "key": "NEXT_PUBLIC_API_BASE_URL",
